@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理员后台 - 东北大学校史地图</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>管理员后台</h1>
+      <p>账号：<%= user.studentId %></p>
+    </div>
+    <div class="actions">
+      <a href="/admin/place/new" class="btn">新增地点</a>
+      <a href="/" class="btn ghost">返回地图</a>
+      <form method="post" action="/logout">
+        <button type="submit" class="btn">退出登录</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="detail-container">
+    <section class="detail-card admin-table-wrap">
+      <h2>地点管理</h2>
+      <p class="subtitle">可在这里新增、编辑、删除地点信息与手绘图路径。</p>
+
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>名称</th>
+            <th>时期</th>
+            <th>手绘图数量</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% places.forEach((place) => { %>
+            <tr>
+              <td><code><%= place.id %></code></td>
+              <td><%= place.name %></td>
+              <td><%= place.period %></td>
+              <td><%= Array.isArray(place.drawings) ? place.drawings.length : 0 %></td>
+              <td>
+                <div class="admin-actions">
+                  <a href="/place/<%= place.id %>" class="btn ghost">预览</a>
+                  <a href="/admin/place/<%= place.id %>/edit" class="btn">编辑</a>
+                  <form method="post" action="/admin/place/<%= place.id %>/delete" onsubmit="return confirm('确定删除该地点吗？');">
+                    <button type="submit" class="btn danger">删除</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,22 @@
+[
+  {
+    "studentId": "20230001",
+    "passwordHash": "$2a$10$Gq4ciFDzZkv.dT85ac.m1.sYrK1JQUOIrOdH4hBhFB1Xg3T/7xljm",
+    "mustChangePassword": false
+  },
+  {
+    "studentId": "20230002",
+    "passwordHash": "$2a$10$i/Mw.WEi6ikbmzlinRX0XO1Tt89eqdOgOeDAy/w4egsHfHqJi5Diu",
+    "mustChangePassword": false
+  },
+  {
+    "studentId": "20230003",
+    "passwordHash": "$2a$10$35DLx6JJBDIPdpQoHKenQei7ex8NHKJ.R6mPgxniE0/FKpRcjDUVG",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20230004",
+    "passwordHash": "$2a$10$QbmPKicr0JVv7cJMqxmjVu5BJKjT1xMCYAYk7Ka8URBWf.woioItK",
+    "mustChangePassword": true
+  }
+]

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= place.name %> - 东北大学校史地图</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1><%= place.name %></h1>
+      <p>校史地点详情</p>
+    </div>
+    <div class="actions">
+      <a href="/" class="btn ghost">返回地图</a>
+      <form method="post" action="/logout">
+        <button type="submit" class="btn">退出登录</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="detail-container">
+    <article class="detail-card">
+      <img src="<%= place.image %>" alt="<%= place.name %>" class="detail-image" />
+      <p class="tag"><%= place.period %></p>
+      <p class="lead"><%= place.summary %></p>
+      <div class="content"><%= place.content %></div>
+
+      <section class="assistant-panel" data-place-id="<%= place.id %>" data-user-id="<%= user.studentId %>">
+        <h3 class="gallery-title">AI 讲解小助手（基础版）</h3>
+        <p class="subtitle">你可以直接点击预设问题，也可以自行输入提问。</p>
+        <div class="assistant-suggestions" id="assistantSuggestions">
+          <% if (Array.isArray(place.qaRules) && place.qaRules.length > 0) { %>
+            <% place.qaRules.forEach((rule) => { %>
+              <button type="button" class="suggestion-chip" data-question="<%= rule.question %>" data-answer="<%= rule.answer %>"><%= rule.question %></button>
+            <% }) %>
+          <% } else { %>
+            <button type="button" class="suggestion-chip" data-question="请用三句话介绍这个地点" data-answer="<%= place.summary %>\n\n补充：<%= place.content %>">三句话介绍</button>
+            <button type="button" class="suggestion-chip" data-question="这个地点最重要的历史意义是什么？" data-answer="<%= place.summary %>">历史意义</button>
+            <button type="button" class="suggestion-chip" data-question="这里有哪些手绘图亮点？" data-answer="<%= Array.isArray(place.drawings) && place.drawings.length > 0 ? ('这里共有 ' + place.drawings.length + ' 张手绘图，建议先看第一张：' + (place.drawings[0].caption || '手绘图')) : '当前地点暂未配置手绘图。' %>">手绘图亮点</button>
+            <button type="button" class="suggestion-chip" data-question="这个地点对应的历史时期是什么？" data-answer="该地点的历史时期是：<%= place.period %>">历史时期</button>
+          <% } %>
+        </div>
+        <button type="button" id="assistantClearBtn" class="btn ghost">清空对话记录</button>
+        <div id="assistantMessages" class="assistant-messages">
+          <article class="assistant-bubble assistant-bubble-bot">
+            你好，我是讲解小助手 👋 请输入你想了解的问题。
+          </article>
+        </div>
+        <form id="assistantForm" class="assistant-form">
+          <input id="assistantQuestion" type="text" maxlength="300" placeholder="例如：请用三句话介绍这个地点" required />
+          <button type="submit">提问</button>
+        </form>
+      </section>
+
+      <% if (Array.isArray(place.drawings) && place.drawings.length > 0) { %>
+        <h3 class="gallery-title">小组手绘图展示</h3>
+        <section class="drawing-grid">
+          <% place.drawings.forEach((drawing) => { %>
+            <article class="drawing-item">
+              <img src="<%= drawing.url %>" alt="<%= drawing.caption || (place.name + '手绘图') %>" />
+              <p><%= drawing.caption || '手绘图' %></p>
+            </article>
+          <% }) %>
+        </section>
+      <% } %>
+    </article>
+  </main>
+  <script>
+    (function () {
+      const panel = document.querySelector(".assistant-panel");
+      if (!panel) {
+        return;
+      }
+
+      const placeId = panel.dataset.placeId;
+      const userId = panel.dataset.userId || "unknown";
+      const form = document.getElementById("assistantForm");
+      const questionInput = document.getElementById("assistantQuestion");
+      const messages = document.getElementById("assistantMessages");
+      const suggestions = document.getElementById("assistantSuggestions");
+      const clearBtn = document.getElementById("assistantClearBtn");
+      const submitButton = form.querySelector("button[type='submit']");
+      const storageKey = `assistant-chat-${userId}-${placeId}`;
+      const initialMessageHtml = `<article class="assistant-bubble assistant-bubble-bot">你好，我是讲解小助手 👋 请输入你想了解的问题。</article>`;
+
+      function resetConversation() {
+        messages.innerHTML = initialMessageHtml;
+        messages.scrollTop = messages.scrollHeight;
+        saveHistory();
+      }
+
+      function saveHistory() {
+        sessionStorage.setItem(storageKey, messages.innerHTML);
+      }
+
+      function restoreHistory() {
+        const saved = sessionStorage.getItem(storageKey);
+        if (!saved) {
+          resetConversation();
+          return;
+        }
+        messages.innerHTML = saved;
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function appendBubble(text, role) {
+        const article = document.createElement("article");
+        article.className = `assistant-bubble ${role === "user" ? "assistant-bubble-user" : "assistant-bubble-bot"}`;
+        article.textContent = text;
+        messages.appendChild(article);
+        messages.scrollTop = messages.scrollHeight;
+        saveHistory();
+      }
+
+      async function askQuestion(question) {
+        if (!question) {
+          return;
+        }
+
+        appendBubble(question, "user");
+        questionInput.value = "";
+        submitButton.disabled = true;
+        submitButton.textContent = "思考中...";
+
+        try {
+          const response = await fetch("/api/assistant", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ placeId, question }),
+          });
+
+          const contentType = response.headers.get("content-type") || "";
+          const isJson = contentType.includes("application/json");
+          const payload = isJson ? await response.json() : null;
+
+          if (response.status === 401) {
+            appendBubble("登录已失效，请重新登录后再继续提问。", "bot");
+            return;
+          }
+
+          if (response.status === 404) {
+            appendBubble("小助手接口不存在（404），请重启服务后刷新页面再试。", "bot");
+            return;
+          }
+
+          if (!response.ok) {
+            const message = payload && payload.error ? payload.error : `请求失败（${response.status}）`;
+            appendBubble(message, "bot");
+            return;
+          }
+
+          if (!payload || !payload.answer) {
+            appendBubble("服务返回格式异常，请稍后重试。", "bot");
+            return;
+          }
+
+          const sourceLabelMap = {
+            cloud: "云端模型",
+            preset: "预设问答",
+            local: "本地规则",
+            "fallback-fixed": "固定兜底",
+          };
+          const sourceLabel = sourceLabelMap[payload.source] || "本地规则";
+          const fallbackTip = payload.source !== "cloud" && payload.fallbackReason
+            ? `\n（云端降级原因：${payload.fallbackReason}）`
+            : "";
+          appendBubble(`${payload.answer}\n\n（回答来源：${sourceLabel}）${fallbackTip}`, "bot");
+        } catch (error) {
+          appendBubble("网络请求失败，请稍后重试。", "bot");
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = "提问";
+          questionInput.focus();
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const question = (questionInput.value || "").trim();
+        await askQuestion(question);
+      });
+
+      suggestions.addEventListener("click", async (event) => {
+        const target = event.target.closest(".suggestion-chip");
+        if (!target) {
+          return;
+        }
+        const question = (target.dataset.question || "").trim();
+        const presetAnswer = (target.dataset.answer || "").trim();
+        if (!question || !presetAnswer) {
+          return;
+        }
+        appendBubble(question, "user");
+        appendBubble(`${presetAnswer}\n\n（回答来源：预设问答）`, "bot");
+      });
+
+      clearBtn.addEventListener("click", () => {
+        resetConversation();
+        questionInput.focus();
+      });
+
+      restoreHistory();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+
+# runtime logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# env files (keep template only)
+.env
+.env.*
+!.env.example

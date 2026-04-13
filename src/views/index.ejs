@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>东北大学校史地图</title>
+  <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/leaflet/1.9.4/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>东北大学校史地图</h1>
+      <p>欢迎你，<%= user.studentId %></p>
+    </div>
+    <div class="actions">
+      <% if (user.isAdmin) { %>
+        <a href="/admin" class="btn">管理员后台</a>
+      <% } %>
+      <a href="/profile/password" class="btn ghost">修改密码</a>
+      <form method="post" action="/logout">
+        <button type="submit" class="btn">退出登录</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <h2>地图导航</h2>
+      <p>点击地图上的发光点，进入地点详情页。</p>
+      <div id="map"></div>
+    </section>
+
+    <aside class="panel list-panel">
+      <h2>地点列表</h2>
+      <ul class="place-list">
+        <% places.forEach((place) => { %>
+          <li>
+            <a href="/place/<%= place.id %>">
+              <strong><%= place.name %></strong>
+              <span><%= place.summary %></span>
+            </a>
+          </li>
+        <% }) %>
+      </ul>
+    </aside>
+  </main>
+
+  <script id="places-data" type="application/json"><%- JSON.stringify(places) %></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/leaflet/1.9.4/leaflet.js" crossorigin=""></script>
+  <script>
+    const placesDataEl = document.getElementById("places-data");
+    const places = JSON.parse(placesDataEl?.textContent || "[]");
+
+    // 东北大学南湖校区范围（收紧到校园边界）
+    const nanhuCenter = [41.76549250249159, 123.41870396437464];
+    const nanhuBounds = L.latLngBounds(
+      [41.7617, 123.4142],
+      [41.7699, 123.4239]
+    );
+
+    const map = L.map("map", {
+      zoomControl: true,
+      minZoom: 15,
+      maxZoom: 19,
+      maxBounds: nanhuBounds,
+      maxBoundsViscosity: 1.0,
+    }).setView(nanhuCenter, 15);
+
+    map.fitBounds(nanhuBounds, {
+      padding: [6, 6],
+    });
+
+    // 多底图兜底：高德主源 -> 高德备源 -> OSM
+    const tileProviders = [
+      {
+        name: "高德主源",
+        url: "https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}",
+        options: {
+          subdomains: [1, 2, 3, 4],
+          attribution: "&copy; 高德地图",
+          maxZoom: 19,
+        },
+      },
+      {
+        name: "高德备源",
+        url: "https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}",
+        options: {
+          subdomains: [1, 2, 3, 4],
+          attribution: "&copy; 高德地图",
+          maxZoom: 19,
+        },
+      },
+      {
+        name: "OSM 兜底",
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        options: {
+          attribution: "&copy; OpenStreetMap",
+          maxZoom: 19,
+        },
+      },
+    ];
+
+    let activeLayer = null;
+    let providerIndex = -1;
+    const tileErrorLimit = 6;
+
+    function showMapNotice(text) {
+      const old = document.getElementById("mapNotice");
+      if (old) {
+        old.remove();
+      }
+      const notice = document.createElement("p");
+      notice.id = "mapNotice";
+      notice.className = "subtitle";
+      notice.textContent = text;
+      const mapPanel = document.querySelector("section.panel");
+      mapPanel.insertBefore(notice, document.getElementById("map"));
+    }
+
+    function mountTileLayer(nextIndex) {
+      if (nextIndex >= tileProviders.length) {
+        showMapNotice("地图底图加载失败，请稍后刷新重试。\n若持续失败，可检查网络或切换科学网络环境。");
+        return;
+      }
+
+      providerIndex = nextIndex;
+      const provider = tileProviders[providerIndex];
+      let errorCount = 0;
+
+      if (activeLayer) {
+        map.removeLayer(activeLayer);
+      }
+
+      activeLayer = L.tileLayer(provider.url, provider.options).addTo(map);
+      showMapNotice(`当前底图：${provider.name}`);
+
+      activeLayer.on("tileerror", () => {
+        errorCount += 1;
+        if (errorCount >= tileErrorLimit) {
+          mountTileLayer(providerIndex + 1);
+        }
+      });
+    }
+
+    mountTileLayer(0);
+
+    const glowingIcon = L.divIcon({
+      className: "glow-marker",
+      html: '<span></span>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    });
+
+    places.forEach((place) => {
+      const marker = L.marker([place.lat, place.lng], { icon: glowingIcon }).addTo(map);
+      marker.bindPopup(`
+        <div class="popup-card">
+          <h3>${place.name}</h3>
+          <p>${place.summary}</p>
+          <a href="/place/${place.id}">查看详情</a>
+        </div>
+      `);
+    });
+  </script>
+</body>
+</html>

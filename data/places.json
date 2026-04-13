@@ -1,0 +1,68 @@
+[
+  {
+    "id": "lib-old",
+    "name": "原图书馆旧址",
+    "lat": 41.76716230284578,
+    "lng": 123.41938406861867,
+    "period": "1950s-1980s",
+    "summary": "见证学校早期教学与科研资料积累的重要地点。",
+    "content": "原图书馆旧址承载了东北大学多个发展阶段的文献与学术记忆。这里曾是大量师生查阅资料、学习交流的重要空间。随着校园建设迭代，功能转移，但其历史意义依然重要。",
+    "image": "/images/drawings/shabi.jpg",
+    "drawings": [
+      {
+        "url": "/images/drawings/lib-old-a.jpg",
+        "caption": "原图书馆旧址手绘立面图"
+      },
+      {
+        "url": "/images/drawings/lib-old-b.jpg",
+        "caption": "原图书馆旧址平面草图"
+      }
+    ],
+    "qaRules": [
+      {
+        "question": "今天晚上吃什么",
+        "answer": "王小明"
+      }
+    ]
+  },
+  {
+    "id": "main-building",
+    "name": "主楼历史区域",
+    "lat": 41.76535353342068,
+    "lng": 123.41598418824482,
+    "period": "1950s-至今",
+    "summary": "学校多个关键发展时期的重要教学与行政空间。",
+    "content": "主楼历史区域是校园认知度最高的建筑群之一，承担教学、办公、学术活动等多重功能。许多重要会议、教学改革和校庆活动都在这一带发生。",
+    "image": "https://images.unsplash.com/photo-1496307653780-42ee777d4833?auto=format&fit=crop&w=1200&q=80",
+    "drawings": [],
+    "qaRules": []
+  },
+  {
+    "id": "industrial-lab",
+    "name": "工业实验基地旧址",
+    "lat": 41.76506156406803,
+    "lng": 123.42057347120705,
+    "period": "1960s-1990s",
+    "summary": "服务国家工业建设的人才培养与实验实践基地。",
+    "content": "工业实验基地旧址反映了东北大学在工科教育中的鲜明特色。很多早期实验课程在此开展，师生围绕材料、冶金、机械等方向形成了扎实的工程实践传统。",
+    "image": "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80",
+    "drawings": [],
+    "qaRules": []
+  },
+  {
+    "id": "1site",
+    "name": "刘豪杰测试地",
+    "lat": 3,
+    "lng": 4,
+    "period": "2029",
+    "summary": "测试图",
+    "content": "没啥可介绍",
+    "image": "/images/drawings/frame_0076.png",
+    "drawings": [
+      {
+        "url": "/images/drawings/frame_0020.png",
+        "caption": "不用说明"
+      }
+    ]
+  }
+]

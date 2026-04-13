@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= mode === 'create' ? '新增地点' : '编辑地点' %> - 管理员后台</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="auth-body">
+  <main class="auth-card admin-form-card">
+    <h1><%= mode === 'create' ? '新增地点' : '编辑地点' %></h1>
+    <p class="subtitle">支持主图与多张手绘图（每行一条）。</p>
+
+    <% if (error) { %>
+      <p class="error"><%= error %></p>
+    <% } %>
+
+    <form method="post" action="<%= mode === 'create' ? '/admin/place/new' : '/admin/place/' + place.id + '/edit' %>" class="form">
+      <label>地点 ID（英文/数字/短横线）</label>
+      <input type="text" name="id" value="<%= place.id %>" <%= mode === 'edit' ? 'readonly' : 'required' %> />
+
+      <label>名称</label>
+      <input type="text" name="name" value="<%= place.name %>" required />
+
+      <label>纬度 lat</label>
+      <input type="text" name="lat" value="<%= place.lat %>" required />
+
+      <label>经度 lng</label>
+      <input type="text" name="lng" value="<%= place.lng %>" required />
+
+      <label>历史时期</label>
+      <input type="text" name="period" value="<%= place.period %>" required />
+
+      <label>摘要</label>
+      <textarea name="summary" rows="2" required><%= place.summary %></textarea>
+
+      <label>详细介绍</label>
+      <textarea name="content" rows="5" required><%= place.content %></textarea>
+
+      <label>主图 URL（如 /images/drawings/xxx.jpg）</label>
+      <input type="text" name="image" id="imageInput" value="<%= place.image %>" required />
+
+      <section class="preview-panel" aria-live="polite">
+        <h2>主图预览</h2>
+        <div class="preview-card">
+          <img id="mainImagePreview" class="preview-main-image" src="" alt="主图预览" />
+          <p id="mainImageHint" class="preview-hint">请输入主图 URL 以查看预览</p>
+        </div>
+      </section>
+
+      <label>手绘图列表（每行：图片路径 | 说明）</label>
+      <textarea name="drawingsText" id="drawingsTextInput" rows="6" placeholder="/images/drawings/lib-old-a.jpg | 原图书馆立面手绘图"><%= place.drawingsText || '' %></textarea>
+
+      <section class="preview-panel" aria-live="polite">
+        <h2>手绘图预览</h2>
+        <p class="subtitle">每行格式：图片路径 | 说明（说明可选）</p>
+        <div id="drawingsPreviewGrid" class="preview-grid"></div>
+        <p id="drawingsEmptyHint" class="preview-hint">请输入手绘图列表以查看预览</p>
+      </section>
+
+      <label>小助手预设问答（每行：问题 | 回答）</label>
+      <textarea name="qaRulesText" rows="7" placeholder="这个地点最重要的历史意义是什么？ | 它见证了......"><%= place.qaRulesText || '' %></textarea>
+
+      <button type="submit"><%= mode === 'create' ? '创建地点' : '保存修改' %></button>
+      <a href="/admin" class="back-link">返回管理员后台</a>
+    </form>
+  </main>
+  <script>
+    (function () {
+      const imageInput = document.getElementById("imageInput");
+      const mainImagePreview = document.getElementById("mainImagePreview");
+      const mainImageHint = document.getElementById("mainImageHint");
+      const drawingsTextInput = document.getElementById("drawingsTextInput");
+      const drawingsPreviewGrid = document.getElementById("drawingsPreviewGrid");
+      const drawingsEmptyHint = document.getElementById("drawingsEmptyHint");
+
+      function normalizeLine(line) {
+        const parts = line.split("|");
+        const url = (parts[0] || "").trim();
+        const caption = (parts[1] || "").trim();
+        return { url, caption };
+      }
+
+      function setMainPreview() {
+        const url = (imageInput.value || "").trim();
+        if (!url) {
+          mainImagePreview.style.display = "none";
+          mainImagePreview.removeAttribute("src");
+          mainImageHint.textContent = "请输入主图 URL 以查看预览";
+          mainImageHint.style.display = "block";
+          return;
+        }
+
+        mainImagePreview.style.display = "block";
+        mainImagePreview.src = url;
+        mainImageHint.style.display = "none";
+      }
+
+      function renderDrawingsPreview() {
+        const lines = (drawingsTextInput.value || "")
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+
+        const items = lines
+          .map(normalizeLine)
+          .filter((item) => item.url);
+
+        drawingsPreviewGrid.innerHTML = "";
+
+        if (items.length === 0) {
+          drawingsEmptyHint.style.display = "block";
+          return;
+        }
+
+        drawingsEmptyHint.style.display = "none";
+
+        items.forEach((item, index) => {
+          const card = document.createElement("article");
+          card.className = "preview-grid-item";
+
+          const img = document.createElement("img");
+          img.src = item.url;
+          img.alt = item.caption || `手绘图预览 ${index + 1}`;
+
+          const caption = document.createElement("p");
+          caption.textContent = item.caption || `第 ${index + 1} 张（未填写说明）`;
+
+          card.appendChild(img);
+          card.appendChild(caption);
+          drawingsPreviewGrid.appendChild(card);
+        });
+      }
+
+      mainImagePreview.addEventListener("error", () => {
+        mainImagePreview.style.display = "none";
+        mainImageHint.textContent = "主图加载失败，请检查 URL 是否正确";
+        mainImageHint.style.display = "block";
+      });
+
+      imageInput.addEventListener("input", setMainPreview);
+      drawingsTextInput.addEventListener("input", renderDrawingsPreview);
+
+      setMainPreview();
+      renderDrawingsPreview();
+    })();
+  </script>
+</body>
+</html>
