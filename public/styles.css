@@ -4,8 +4,8 @@
   --glass-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.15), rgba(19, 24, 51, 0.36));
   --glass-border: rgba(255, 255, 255, 0.24);
   --glass-shadow: 0 20px 42px rgba(4, 8, 26, 0.34);
-  --text: #e8ecff;
-  --muted: #9ea8d6;
+  --text: #ffffff;
+  --muted: rgba(255, 255, 255, 0.92);
   --accent: #58a6ff;
   --accent-2: #9d4edd;
   --success: #34d399;
@@ -19,7 +19,7 @@
 
 body {
   margin: 0;
-  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: "STKaiti", "KaiTi", "华文行楷", "FZShuTi", "Microsoft YaHei", sans-serif;
   background: radial-gradient(circle at top, #1a1f4a 0%, var(--bg) 55%);
   color: var(--text);
   min-height: 100vh;
@@ -134,7 +134,7 @@ h1, h2 {
 }
 
 label {
-  color: #c8d0f8;
+  color: #ffffff;
   font-size: 14px;
 }
 
@@ -142,6 +142,7 @@ input {
   border: 1px solid #31427a;
   background: #111634;
   color: var(--text);
+  font-family: inherit;
   border-radius: 10px;
   padding: 10px 12px;
 }
@@ -158,6 +159,7 @@ textarea {
 
 button,
 .btn {
+  font-family: inherit;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 14px;
   padding: 10px 16px;
@@ -240,7 +242,7 @@ button:hover::after,
 
 .topbar p {
   margin: 2px 0 0;
-  color: #d7e3ff;
+  color: #ffffff;
   font-size: 14px;
 }
 
@@ -250,6 +252,14 @@ button:hover::after,
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.topbar-main h1 {
+  color: #ffffff;
+  font-family: "STKaiti", "KaiTi", "华文行楷", "FZShuTi", "Microsoft YaHei", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
 .brand-block {
@@ -337,7 +347,7 @@ button:hover::after,
 
 .place-list span {
   display: block;
-  color: var(--muted);
+  color: #ffffff;
   margin-top: 6px;
   font-size: 14px;
 }
@@ -397,11 +407,11 @@ button:hover::after,
 
 .lead {
   font-size: 18px;
-  color: #d7e4ff;
+  color: #ffffff;
 }
 
 .content {
-  color: #c6cff5;
+  color: #ffffff;
   line-height: 1.8;
 }
 
@@ -438,7 +448,7 @@ button:hover::after,
 
 .drawing-item p {
   margin: 8px 10px 10px;
-  color: #d5defa;
+  color: #ffffff;
   font-size: 14px;
 }
 
@@ -587,7 +597,7 @@ button:hover::after,
 .preview-grid-item p {
   margin: 8px;
   font-size: 13px;
-  color: #d5defa;
+  color: #ffffff;
 }
 
 .admin-table-wrap {
@@ -609,7 +619,7 @@ button:hover::after,
 }
 
 .admin-table th {
-  color: #bfd4ff;
+  color: #ffffff;
   font-size: 14px;
 }
 
