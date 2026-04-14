@@ -107,8 +107,8 @@ body::after {
 }
 
 .login-emblem {
-  width: 74px;
-  height: 74px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid rgba(255, 255, 255, 0.65);
@@ -236,17 +236,20 @@ button:hover::after,
 .brand-block {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .brand-emblem {
-  width: 42px;
-  height: 42px;
+  width: 74px;
+  height: 74px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.24);
-  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.36),
+    0 0 0 4px rgba(124, 194, 255, 0.24),
+    0 0 24px rgba(124, 194, 255, 0.38);
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .actions {
@@ -603,13 +606,13 @@ button:hover::after,
   }
 
   .brand-emblem {
-    width: 36px;
-    height: 36px;
+    width: 60px;
+    height: 60px;
   }
 
   .login-emblem {
-    width: 66px;
-    height: 66px;
+    width: 90px;
+    height: 90px;
   }
 }
 
