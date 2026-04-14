@@ -12,7 +12,7 @@
     <div class="brand-block">
       <img src="/images/neusign.jpg" alt="东北大学校徽" class="brand-emblem" />
       <div>
-      <h1>东北大学校史地图</h1>
+      <h1>NEU数字地图</h1>
       <p>欢迎你，<%= user.studentId %></p>
       </div>
     </div>
@@ -20,7 +20,7 @@
       <% if (user.isAdmin) { %>
         <a href="/admin" class="btn">管理员后台</a>
       <% } %>
-      <a href="/profile/password" class="btn ghost">修改密码</a>
+  <a href="/profile/password" class="btn ghost">改密码</a>
       <form method="post" action="/logout">
         <button type="submit" class="btn">退出登录</button>
       </form>
