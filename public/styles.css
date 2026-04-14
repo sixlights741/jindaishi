@@ -1,6 +1,9 @@
 :root {
   --bg: #090b1a;
   --card: rgba(19, 24, 51, 0.85);
+  --glass-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.15), rgba(19, 24, 51, 0.36));
+  --glass-border: rgba(255, 255, 255, 0.24);
+  --glass-shadow: 0 20px 42px rgba(4, 8, 26, 0.34);
   --text: #e8ecff;
   --muted: #9ea8d6;
   --accent: #58a6ff;
@@ -76,11 +79,12 @@ body::after {
 .auth-card,
 .panel,
 .detail-card {
-  background: var(--card);
-  border: 1px solid rgba(157, 78, 221, 0.3);
-  backdrop-filter: blur(12px);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
   border-radius: 18px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--glass-shadow);
   transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
@@ -142,23 +146,32 @@ textarea {
 
 button,
 .btn {
-  border: none;
-  border-radius: 10px;
-  padding: 10px 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  padding: 10px 16px;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.26), transparent 44%),
+    linear-gradient(140deg, rgba(88, 166, 255, 0.96), rgba(157, 78, 221, 0.92));
   color: white;
   cursor: pointer;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   position: relative;
   overflow: hidden;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  box-shadow:
+    0 12px 24px rgba(88, 166, 255, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
 button:hover,
 .btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(88, 166, 255, 0.35);
+  transform: translateY(-2px);
+  box-shadow:
+    0 18px 30px rgba(88, 166, 255, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 button::after,
@@ -180,8 +193,10 @@ button:hover::after,
 }
 
 .btn.ghost {
-  background: transparent;
-  border: 1px solid #4660c8;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.14), rgba(19, 24, 51, 0.24));
+  border: 1px solid rgba(170, 198, 255, 0.44);
+  color: #eaf2ff;
+  box-shadow: 0 10px 22px rgba(5, 10, 30, 0.26);
 }
 
 .error {
@@ -198,11 +213,12 @@ button:hover::after,
   align-items: center;
   padding: 18px 28px;
   border-bottom: 1px solid rgba(70, 96, 200, 0.4);
-  background: rgba(7, 10, 27, 0.7);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(7, 10, 27, 0.54));
   position: sticky;
   top: 0;
   z-index: 1000;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
 }
 
 .actions {
@@ -249,7 +265,7 @@ button:hover::after,
   padding: 12px;
   border: 1px solid rgba(108, 137, 255, 0.35);
   border-radius: 10px;
-  background: rgba(17, 22, 52, 0.8);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(17, 22, 52, 0.56));
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }
 
@@ -341,8 +357,8 @@ button:hover::after,
 }
 
 .drawing-item {
-  background: rgba(11, 15, 36, 0.8);
-  border: 1px solid rgba(90, 130, 255, 0.35);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(11, 15, 36, 0.62));
+  border: 1px solid rgba(183, 209, 255, 0.28);
   border-radius: 12px;
   overflow: hidden;
   transition: transform 0.24s ease, border-color 0.24s ease;
@@ -370,7 +386,9 @@ button:hover::after,
   margin-top: 20px;
   border: 1px solid rgba(88, 166, 255, 0.34);
   border-radius: 14px;
-  background: rgba(8, 12, 30, 0.72);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(8, 12, 30, 0.56));
+  backdrop-filter: blur(12px) saturate(1.12);
+  -webkit-backdrop-filter: blur(12px) saturate(1.12);
   padding: 12px;
 }
 
@@ -465,7 +483,9 @@ button:hover::after,
 
 .preview-card {
   border: 1px dashed rgba(123, 163, 255, 0.45);
-  background: rgba(10, 14, 36, 0.78);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(10, 14, 36, 0.58));
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
   border-radius: 12px;
   padding: 10px;
 }
@@ -494,7 +514,7 @@ button:hover::after,
   border: 1px solid rgba(90, 130, 255, 0.36);
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(12, 17, 44, 0.82);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(12, 17, 44, 0.62));
 }
 
 .preview-grid-item img {
@@ -540,7 +560,9 @@ button:hover::after,
 }
 
 .btn.danger {
-  background: linear-gradient(135deg, #ff6b6b, #c92a2a);
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.24), transparent 42%),
+    linear-gradient(140deg, #ff6b6b, #c92a2a);
 }
 
 @media (max-width: 900px) {
