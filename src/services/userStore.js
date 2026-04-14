@@ -35,7 +35,40 @@ function ensureUserFile() {
   if (!Array.isArray(users) || users.length === 0) {
     const seededUsers = seedFromStudentIds();
     writeJson(usersPath, seededUsers);
+    return;
   }
+
+  const syncedUsers = syncUsersWithStudentIds(users);
+  if (syncedUsers.changed) {
+    writeJson(usersPath, syncedUsers.users);
+  }
+}
+
+function syncUsersWithStudentIds(existingUsers) {
+  const ids = readJson(studentIdsPath, []).map((item) => String(item).trim()).filter(Boolean);
+  const existingMap = new Map(
+    existingUsers
+      .filter((item) => item && item.studentId)
+      .map((item) => [String(item.studentId).trim(), item])
+  );
+
+  let changed = false;
+
+  ids.forEach((sid) => {
+    if (!existingMap.has(sid)) {
+      existingMap.set(sid, {
+        studentId: sid,
+        passwordHash: bcrypt.hashSync(sid, 10),
+        mustChangePassword: true,
+      });
+      changed = true;
+    }
+  });
+
+  return {
+    changed,
+    users: Array.from(existingMap.values()),
+  };
 }
 
 function seedFromStudentIds() {
@@ -56,6 +89,38 @@ function getUsers() {
   return readJson(usersPath, []);
 }
 
+function getStudentIds() {
+  return readJson(studentIdsPath, []).map((item) => String(item).trim()).filter(Boolean);
+}
+
+function ensureStudentUserExists(studentId) {
+  const sid = String(studentId || "").trim();
+  if (!sid) {
+    return null;
+  }
+
+  const users = getUsers();
+  const exists = users.find((item) => item.studentId === sid);
+  if (exists) {
+    return exists;
+  }
+
+  const studentIds = getStudentIds();
+  if (!studentIds.includes(sid)) {
+    return null;
+  }
+
+  const newUser = {
+    studentId: sid,
+    passwordHash: bcrypt.hashSync(sid, 10),
+    mustChangePassword: true,
+  };
+
+  users.push(newUser);
+  writeJson(usersPath, users);
+  return newUser;
+}
+
 function getAdminIds() {
   return readJson(adminIdsPath, ["20230001"]).map((item) => String(item).trim());
 }
@@ -74,7 +139,11 @@ function getUserByStudentId(studentId) {
 }
 
 async function verifyUser(studentId, password) {
-  const user = getUserByStudentId(studentId);
+  let user = getUserByStudentId(studentId);
+  if (!user) {
+    ensureStudentUserExists(studentId);
+    user = getUserByStudentId(studentId);
+  }
   if (!user) {
     return null;
   }

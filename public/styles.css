@@ -51,6 +51,16 @@ body::after {
 .auth-body {
   display: grid;
   place-items: center;
+  background: transparent;
+}
+
+.auth-body::before {
+  filter: blur(0px) saturate(1.16) brightness(1.2);
+  opacity: 1;
+}
+
+.auth-body::after {
+  background: transparent;
 }
 
 .background-glow {
@@ -85,9 +95,11 @@ body::after {
   width: min(420px, 92vw);
   padding: 28px;
   z-index: 1;
-  background: rgba(19, 24, 51, 0.42);
-  border: 1px solid rgba(157, 78, 221, 0.22);
-  backdrop-filter: blur(8px);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.18), rgba(19, 24, 51, 0.28));
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
 }
 
 h1, h2 {
