@@ -10,7 +10,7 @@
   --accent-2: #9d4edd;
   --success: #34d399;
   --error: #ff6b6b;
-  --bg-photo: url("/images/campus-bg-main.JPG?v=20260414c");
+  --bg-photo: url("/images/campus-bg-main.jpg?v=20260414d");
 }
 
 * {
@@ -31,7 +31,10 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background-image: var(--bg-photo);
+  background-image:
+    var(--bg-photo),
+    url("/images/campus-bg-main.JPG?v=20260414d"),
+    url("/images/campus-bg.jpg?v=20260414d");
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center top;
