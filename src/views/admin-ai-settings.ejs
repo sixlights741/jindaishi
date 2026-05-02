@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 配置 - 管理员后台</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="auth-body">
+  <main class="auth-card admin-form-card">
+    <h1>AI 配置</h1>
+    <p class="subtitle">在网页中配置 AI API 密钥与模型，免去命令行反复设置。</p>
+
+    <div
+      id="provider-indicator"
+      class="provider-indicator"
+      data-base-url="<%= config.baseUrl || '' %>"
+      data-api-url="<%= config.apiUrl || '' %>"
+      data-model="<%= config.model || '' %>"
+    >
+      当前配置：检测中...
+    </div>
+
+    <% if (success) { %>
+      <p class="success">配置已保存，新的设置会立即生效。</p>
+    <% } %>
+
+    <form method="post" action="/admin/ai-settings" class="form">
+      <label>API 密钥（可留空保持不变）</label>
+      <input type="password" name="apiKey" placeholder="sk-..." autocomplete="off" />
+
+      <label>Base URL（可选）</label>
+      <input type="text" name="baseUrl" value="<%= config.baseUrl || '' %>" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" />
+
+      <label>API URL（可选，高级）</label>
+      <input type="text" name="apiUrl" value="<%= config.apiUrl || '' %>" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" />
+
+      <label>模型名称（可选）</label>
+      <input type="text" name="model" value="<%= config.model || '' %>" placeholder="qwen3.5-flash" />
+
+      <div class="actions preset-actions">
+        <button type="button" class="btn ghost" id="preset-qwen">一键填入通义千问</button>
+        <button type="button" class="btn ghost" id="preset-deepseek">一键填入 DeepSeek</button>
+        <button type="button" class="btn ghost" id="preset-openai">恢复 OpenAI 默认</button>
+      </div>
+
+      <label>
+        <input type="checkbox" name="clearKey" /> 清空已保存的密钥
+      </label>
+
+      <button type="submit">保存配置</button>
+      <a href="/admin" class="back-link">返回管理员后台</a>
+    </form>
+
+    <section class="test-panel">
+      <h2>配置测试</h2>
+      <p class="subtitle">输入一句问题，点击测试按钮验证密钥是否可用。</p>
+      <div class="form">
+        <label>测试问题</label>
+        <input id="ai-test-question" type="text" placeholder="例如：请简单介绍一下这个地点" />
+        <button type="button" id="ai-test-btn">测试连接</button>
+        <div id="ai-test-result" class="test-result"></div>
+      </div>
+    </section>
+
+    <section class="test-panel">
+      <h2>当前密钥与模型</h2>
+      <p class="subtitle">点击按钮查看当前配置的 API 密钥（脱敏）与模型名称。</p>
+      <div class="form">
+        <button type="button" id="ai-config-info-btn">查看当前配置</button>
+        <div id="ai-config-info" class="test-result"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const baseUrlInput = document.querySelector("input[name='baseUrl']");
+    const apiUrlInput = document.querySelector("input[name='apiUrl']");
+    const modelInput = document.querySelector("input[name='model']");
+    const presetQwenBtn = document.getElementById("preset-qwen");
+    const presetDeepSeekBtn = document.getElementById("preset-deepseek");
+    const presetOpenAiBtn = document.getElementById("preset-openai");
+    const providerIndicator = document.getElementById("provider-indicator");
+
+    function detectProvider(baseUrl, apiUrl, model) {
+      const combined = `${baseUrl} ${apiUrl} ${model}`.toLowerCase();
+      if (combined.includes("deepseek")) {
+        return { label: "DeepSeek", key: "deepseek" };
+      }
+      if (combined.includes("dashscope") || combined.includes("qwen")) {
+        return { label: "通义千问", key: "qwen" };
+      }
+      if (!baseUrl && !apiUrl) {
+        return { label: "OpenAI 默认", key: "openai" };
+      }
+      return { label: "自定义配置", key: "custom" };
+    }
+
+    function renderProviderBadge() {
+      const baseUrl = providerIndicator.dataset.baseUrl || "";
+      const apiUrl = providerIndicator.dataset.apiUrl || "";
+      const model = providerIndicator.dataset.model || "";
+      const provider = detectProvider(baseUrl, apiUrl, model);
+      providerIndicator.textContent = `当前配置：${provider.label}`;
+      providerIndicator.dataset.provider = provider.key;
+    }
+
+    presetQwenBtn.addEventListener("click", () => {
+      baseUrlInput.value = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+      apiUrlInput.value = "";
+      modelInput.value = "qwen-plus";
+    });
+
+    presetDeepSeekBtn.addEventListener("click", () => {
+      baseUrlInput.value = "https://api.deepseek.com/v1";
+      apiUrlInput.value = "";
+      modelInput.value = "deepseek-v4-flash";
+    });
+
+    presetOpenAiBtn.addEventListener("click", () => {
+      baseUrlInput.value = "";
+      apiUrlInput.value = "";
+      modelInput.value = "";
+    });
+
+    renderProviderBadge();
+
+    const testBtn = document.getElementById("ai-test-btn");
+    const testInput = document.getElementById("ai-test-question");
+    const resultEl = document.getElementById("ai-test-result");
+  const infoBtn = document.getElementById("ai-config-info-btn");
+  const infoEl = document.getElementById("ai-config-info");
+
+    function renderResult(message, isError) {
+      resultEl.textContent = message || "";
+      resultEl.classList.toggle("error", Boolean(isError));
+      resultEl.classList.toggle("success", !isError && Boolean(message));
+    }
+
+    testBtn.addEventListener("click", async () => {
+      const question = (testInput.value || "").trim() || "请简单介绍一下这个地点";
+      renderResult("正在测试中...", false);
+      testBtn.disabled = true;
+
+      try {
+        const response = await fetch("/admin/ai-settings/test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          renderResult(data.error || "测试失败", true);
+          return;
+        }
+
+        renderResult(`测试成功（${data.model || "unknown"}）：${data.answer}`, false);
+      } catch (error) {
+        renderResult("测试失败，请稍后重试", true);
+      } finally {
+        testBtn.disabled = false;
+      }
+    });
+
+    infoBtn.addEventListener("click", async () => {
+      infoEl.textContent = "正在获取配置...";
+      infoEl.classList.remove("error", "success");
+
+      try {
+        const response = await fetch("/admin/ai-settings/info", { method: "GET" });
+        const data = await response.json();
+        if (!response.ok) {
+          infoEl.textContent = data.error || "获取失败";
+          infoEl.classList.add("error");
+          return;
+        }
+        infoEl.textContent = `密钥：${data.apiKeyMasked}\n模型：${data.model}\n提供方：${data.providerLabel}`;
+        infoEl.classList.add("success");
+      } catch (error) {
+        infoEl.textContent = "获取失败，请稍后重试";
+        infoEl.classList.add("error");
+      }
+    });
+  </script>
+</body>
+</html>

@@ -9,13 +9,13 @@
 <body class="auth-body">
   <main class="auth-card admin-form-card">
     <h1><%= mode === 'create' ? '新增地点' : '编辑地点' %></h1>
-    <p class="subtitle">支持主图与多张手绘图（每行一条）。</p>
+  <p class="subtitle">支持主图与多张手绘图，均可直接从本地上传。</p>
 
     <% if (error) { %>
       <p class="error"><%= error %></p>
     <% } %>
 
-    <form method="post" action="<%= mode === 'create' ? '/admin/place/new' : '/admin/place/' + place.id + '/edit' %>" class="form">
+  <form method="post" action="<%= mode === 'create' ? '/admin/place/new' : '/admin/place/' + place.id + '/edit' %>" class="form" enctype="multipart/form-data">
       <label>地点 ID（英文/数字/短横线）</label>
       <input type="text" name="id" value="<%= place.id %>" <%= mode === 'edit' ? 'readonly' : 'required' %> />
 
@@ -37,8 +37,24 @@
       <label>详细介绍</label>
       <textarea name="content" rows="5" required><%= place.content %></textarea>
 
-      <label>主图 URL（如 /images/drawings/xxx.jpg）</label>
-      <input type="text" name="image" id="imageInput" value="<%= place.image %>" required />
+  <label>主图上传（必填）</label>
+  <input type="file" name="imageFile" id="imageFileInput" accept="image/*" />
+  <p class="subtitle">若编辑时不上传，则保留当前主图。</p>
+  <input type="hidden" name="image" id="imageInput" value="<%= place.image %>" />
+
+  <label>B 站视频链接（可选，BV/AV 或 player 链接）</label>
+  <input type="text" name="videoUrl" value="<%= place.videoUrl || '' %>" placeholder="https://www.bilibili.com/video/BV..." />
+
+      <section class="preview-panel" aria-live="polite">
+        <h2>视频预览</h2>
+        <p class="subtitle">支持 BV/AV 或 player 链接，填写后自动预览。</p>
+        <div class="preview-card">
+          <div id="videoPreview" class="video-embed video-preview">
+            <iframe id="videoPreviewFrame" src="" allowfullscreen loading="lazy" referrerpolicy="no-referrer"></iframe>
+          </div>
+          <p id="videoPreviewHint" class="preview-hint">请输入 B 站视频链接以查看预览</p>
+        </div>
+      </section>
 
       <section class="preview-panel" aria-live="polite">
         <h2>主图预览</h2>
@@ -48,8 +64,14 @@
         </div>
       </section>
 
-      <label>手绘图列表（每行：图片路径 | 说明）</label>
-      <textarea name="drawingsText" id="drawingsTextInput" rows="6" placeholder="/images/drawings/lib-old-a.jpg | 原图书馆立面手绘图"><%= place.drawingsText || '' %></textarea>
+  <label>手绘图上传（可多选）</label>
+  <input type="file" name="drawingFiles" id="drawingFilesInput" accept="image/*" multiple />
+  <p class="subtitle">上传的图片将自动追加到手绘图列表中。</p>
+
+  <label>上传手绘图说明（可选，每行对应一张上传图）</label>
+  <textarea name="drawingsCaptions" id="drawingsCaptionsInput" rows="3" placeholder="第一张说明\n第二张说明"><%= place.drawingsCaptions || '' %></textarea>
+
+  <input type="hidden" name="drawingsText" id="drawingsTextInput" value="<%= place.drawingsText || '' %>" />
 
       <section class="preview-panel" aria-live="polite">
         <h2>手绘图预览</h2>
@@ -70,9 +92,15 @@
       const imageInput = document.getElementById("imageInput");
       const mainImagePreview = document.getElementById("mainImagePreview");
       const mainImageHint = document.getElementById("mainImageHint");
-      const drawingsTextInput = document.getElementById("drawingsTextInput");
+  const imageFileInput = document.getElementById("imageFileInput");
+  const drawingFilesInput = document.getElementById("drawingFilesInput");
+  const drawingsTextInput = document.getElementById("drawingsTextInput");
       const drawingsPreviewGrid = document.getElementById("drawingsPreviewGrid");
       const drawingsEmptyHint = document.getElementById("drawingsEmptyHint");
+  const videoInput = document.querySelector("input[name='videoUrl']");
+  const videoPreview = document.getElementById("videoPreview");
+  const videoPreviewFrame = document.getElementById("videoPreviewFrame");
+  const videoPreviewHint = document.getElementById("videoPreviewHint");
 
       function normalizeLine(line) {
         const parts = line.split("|");
@@ -81,8 +109,8 @@
         return { url, caption };
       }
 
-      function setMainPreview() {
-        const url = (imageInput.value || "").trim();
+      function setMainPreview(overrideUrl) {
+        const url = (overrideUrl || imageInput.value || "").trim();
         if (!url) {
           mainImagePreview.style.display = "none";
           mainImagePreview.removeAttribute("src");
@@ -97,6 +125,7 @@
       }
 
       function renderDrawingsPreview() {
+        const uploadedFiles = drawingFilesInput?.files ? Array.from(drawingFilesInput.files) : [];
         const lines = (drawingsTextInput.value || "")
           .split("\n")
           .map((line) => line.trim())
@@ -106,16 +135,22 @@
           .map(normalizeLine)
           .filter((item) => item.url);
 
+        const uploadedItems = uploadedFiles.map((file, index) => ({
+          url: URL.createObjectURL(file),
+          caption: file.name || `上传图 ${index + 1}`,
+          isUpload: true,
+        }));
+
         drawingsPreviewGrid.innerHTML = "";
 
-        if (items.length === 0) {
+        if (items.length === 0 && uploadedItems.length === 0) {
           drawingsEmptyHint.style.display = "block";
           return;
         }
 
         drawingsEmptyHint.style.display = "none";
 
-        items.forEach((item, index) => {
+  [...uploadedItems, ...items].forEach((item, index) => {
           const card = document.createElement("article");
           card.className = "preview-grid-item";
 
@@ -132,17 +167,68 @@
         });
       }
 
+      function buildBilibiliEmbed(rawUrl) {
+        const url = (rawUrl || "").trim();
+        if (!url) {
+          return "";
+        }
+        if (url.includes("player.bilibili.com")) {
+          return url;
+        }
+        const bvidMatch = url.match(/BV[0-9A-Za-z]+/);
+        if (bvidMatch) {
+          return `https://player.bilibili.com/player.html?bvid=${bvidMatch[0]}&high_quality=1&autoplay=0`;
+        }
+        const aidMatch = url.match(/av(\d+)/i);
+        if (aidMatch) {
+          return `https://player.bilibili.com/player.html?aid=${aidMatch[1]}&high_quality=1&autoplay=0`;
+        }
+        return "";
+      }
+
+      function setVideoPreview() {
+        const embedUrl = buildBilibiliEmbed(videoInput?.value || "");
+        if (!embedUrl) {
+          videoPreview.style.display = "none";
+          videoPreviewFrame.removeAttribute("src");
+          videoPreviewHint.textContent = "请输入 B 站视频链接以查看预览";
+          videoPreviewHint.style.display = "block";
+          return;
+        }
+        videoPreview.style.display = "block";
+        videoPreviewFrame.src = embedUrl;
+        videoPreviewHint.style.display = "none";
+      }
+
       mainImagePreview.addEventListener("error", () => {
         mainImagePreview.style.display = "none";
         mainImageHint.textContent = "主图加载失败，请检查 URL 是否正确";
         mainImageHint.style.display = "block";
       });
 
-      imageInput.addEventListener("input", setMainPreview);
+      imageInput.addEventListener("input", () => setMainPreview());
+      if (imageFileInput) {
+        imageFileInput.addEventListener("change", () => {
+          const file = imageFileInput.files && imageFileInput.files[0];
+          if (file) {
+            const previewUrl = URL.createObjectURL(file);
+            setMainPreview(previewUrl);
+            return;
+          }
+          setMainPreview();
+        });
+      }
+      if (drawingFilesInput) {
+        drawingFilesInput.addEventListener("change", renderDrawingsPreview);
+      }
       drawingsTextInput.addEventListener("input", renderDrawingsPreview);
+      if (videoInput) {
+        videoInput.addEventListener("input", setVideoPreview);
+      }
 
-      setMainPreview();
-      renderDrawingsPreview();
+  setMainPreview();
+  renderDrawingsPreview();
+      setVideoPreview();
     })();
   </script>
 </body>

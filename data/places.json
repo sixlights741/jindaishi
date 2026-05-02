@@ -7,7 +7,7 @@
     "period": "1950s-1980s",
     "summary": "见证学校早期教学与科研资料积累的重要地点。",
     "content": "原图书馆旧址承载了东北大学多个发展阶段的文献与学术记忆。这里曾是大量师生查阅资料、学习交流的重要空间。随着校园建设迭代，功能转移，但其历史意义依然重要。",
-    "image": "/images/drawings/shabi.jpg",
+    "image": "/uploads/1777736883298-826614927.jpg",
     "drawings": [
       {
         "url": "/images/drawings/lib-old-a.jpg",
@@ -16,14 +16,14 @@
       {
         "url": "/images/drawings/lib-old-b.jpg",
         "caption": "原图书馆旧址平面草图"
+      },
+      {
+        "url": "/uploads/1777736808979-89137265.jpg",
+        "caption": "Screenshot_20260309_193308"
       }
     ],
-    "qaRules": [
-      {
-        "question": "今天晚上吃什么",
-        "answer": "王小明"
-      }
-    ]
+    "qaRules": [],
+    "videoUrl": "【东北10元不限时火锅自助 老板是有亏钱返利系统吗？】 https://www.bilibili.com/video/BV1TnoDBcE2v/?share_source=copy_web&vd_source=abd7ad8305f2a294528b16ff63505a12"
   },
   {
     "id": "main-building",

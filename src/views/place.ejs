@@ -30,6 +30,38 @@
       <p class="lead"><%= place.summary %></p>
       <div class="content"><%= place.content %></div>
 
+      <%
+        const rawVideoUrl = (place.videoUrl || "").trim();
+        let embedUrl = "";
+        if (rawVideoUrl) {
+          if (rawVideoUrl.includes("player.bilibili.com")) {
+            embedUrl = rawVideoUrl;
+          } else {
+            const bvidMatch = rawVideoUrl.match(/BV[0-9A-Za-z]+/);
+            const aidMatch = rawVideoUrl.match(/av(\d+)/i);
+            if (bvidMatch) {
+              embedUrl = `https://player.bilibili.com/player.html?bvid=${bvidMatch[0]}&high_quality=1&autoplay=0`;
+            } else if (aidMatch) {
+              embedUrl = `https://player.bilibili.com/player.html?aid=${aidMatch[1]}&high_quality=1&autoplay=0`;
+            }
+          }
+        }
+      %>
+
+      <% if (embedUrl) { %>
+        <section class="video-section">
+          <h3 class="gallery-title">地点视频</h3>
+          <div class="video-embed">
+            <iframe
+              src="<%= embedUrl %>"
+              allowfullscreen
+              loading="lazy"
+              referrerpolicy="no-referrer"
+            ></iframe>
+          </div>
+        </section>
+      <% } %>
+
       <section class="assistant-panel" data-place-id="<%= place.id %>" data-user-id="<%= user.studentId %>">
         <h3 class="gallery-title">AI 讲解小助手（基础版）</h3>
         <p class="subtitle">你可以直接点击预设问题，也可以自行输入提问。</p>
@@ -162,7 +194,7 @@
           }
 
           const sourceLabelMap = {
-            cloud: "云端模型",
+            cloud: payload.providerLabel || payload.model || "云端模型",
             preset: "预设问答",
             local: "本地规则",
             "fallback-fixed": "固定兜底",

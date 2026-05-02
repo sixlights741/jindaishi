@@ -4,13 +4,13 @@
   --glass-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.15), rgba(19, 24, 51, 0.36));
   --glass-border: rgba(255, 255, 255, 0.24);
   --glass-shadow: 0 20px 42px rgba(4, 8, 26, 0.34);
-  --text: #e8ecff;
-  --muted: #9ea8d6;
+  --text: #ffffff;
+  --muted: rgba(255, 255, 255, 0.92);
   --accent: #58a6ff;
   --accent-2: #9d4edd;
   --success: #34d399;
   --error: #ff6b6b;
-  --bg-photo: url("/images/campus-bg-main.JPG?v=20260414c");
+  --bg-photo: url("/images/campus-bg-main.jpg?v=20260414d");
 }
 
 * {
@@ -19,7 +19,7 @@
 
 body {
   margin: 0;
-  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: "STKaiti", "KaiTi", "华文行楷", "FZShuTi", "Microsoft YaHei", sans-serif;
   background: radial-gradient(circle at top, #1a1f4a 0%, var(--bg) 55%);
   color: var(--text);
   min-height: 100vh;
@@ -31,7 +31,11 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background-image: var(--bg-photo);
+  background-image:
+    var(--bg-photo),
+    url("/images/campus-bg-main.JPG?v=20260414d"),
+    url("/images/campus-bg.jpg?v=20260414d");
+  background-repeat: no-repeat;
   background-size: cover;
   background-position: center top;
   filter: blur(0px) saturate(1.08) brightness(1.08);
@@ -79,8 +83,8 @@ body::after {
 .auth-card,
 .panel,
 .detail-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.22), rgba(19, 24, 51, 0.52));
+  border: 1px solid rgba(230, 238, 255, 0.34);
   backdrop-filter: blur(14px) saturate(1.15);
   -webkit-backdrop-filter: blur(14px) saturate(1.15);
   border-radius: 18px;
@@ -104,6 +108,19 @@ body::after {
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+}
+
+.auth-body .auth-card {
+  background: transparent;
+  border: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  text-align: center;
+}
+
+.auth-body .auth-card .form {
+  text-align: left;
 }
 
 .login-emblem {
@@ -134,7 +151,7 @@ h1, h2 {
 }
 
 label {
-  color: #c8d0f8;
+  color: #ffffff;
   font-size: 14px;
 }
 
@@ -142,6 +159,7 @@ input {
   border: 1px solid #31427a;
   background: #111634;
   color: var(--text);
+  font-family: inherit;
   border-radius: 10px;
   padding: 10px 12px;
 }
@@ -158,6 +176,7 @@ textarea {
 
 button,
 .btn {
+  font-family: inherit;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 14px;
   padding: 10px 16px;
@@ -233,6 +252,33 @@ button:hover::after,
   -webkit-backdrop-filter: blur(14px) saturate(1.15);
 }
 
+.topbar h1 {
+  margin: 0;
+  line-height: 1.2;
+}
+
+.topbar p {
+  margin: 2px 0 0;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.topbar-main {
+  background: transparent;
+  border-bottom: 1px solid rgba(170, 202, 255, 0.24);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.topbar-main h1 {
+  color: #ffffff;
+  font-family: "STKaiti", "KaiTi", "华文行楷", "FZShuTi", "Microsoft YaHei", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
 .brand-block {
   display: flex;
   align-items: center;
@@ -242,14 +288,24 @@ button:hover::after,
 .brand-emblem {
   width: 74px;
   height: 74px;
+  aspect-ratio: 1 / 1;
+  display: block;
+  flex-shrink: 0;
   border-radius: 50%;
   object-fit: cover;
+  object-position: 50% 50%;
+  clip-path: circle(50% at 50% 50%);
   border: 2px solid rgba(255, 255, 255, 0.78);
   box-shadow:
     0 12px 28px rgba(0, 0, 0, 0.36),
     0 0 0 4px rgba(124, 194, 255, 0.24),
     0 0 24px rgba(124, 194, 255, 0.38);
   background: rgba(255, 255, 255, 0.96);
+}
+
+.topbar-main .brand-emblem {
+  width: 88px;
+  height: 88px;
 }
 
 .actions {
@@ -308,7 +364,7 @@ button:hover::after,
 
 .place-list span {
   display: block;
-  color: var(--muted);
+  color: #ffffff;
   margin-top: 6px;
   font-size: 14px;
 }
@@ -368,17 +424,40 @@ button:hover::after,
 
 .lead {
   font-size: 18px;
-  color: #d7e4ff;
+  color: #ffffff;
 }
 
 .content {
-  color: #c6cff5;
+  color: #ffffff;
   line-height: 1.8;
 }
 
 .gallery-title {
   margin-top: 22px;
   margin-bottom: 10px;
+}
+
+.video-section {
+  margin-top: 20px;
+}
+
+.video-embed {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(230, 238, 255, 0.32);
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.28);
+  background: rgba(10, 14, 30, 0.6);
+}
+
+.video-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 .drawing-grid {
@@ -409,7 +488,7 @@ button:hover::after,
 
 .drawing-item p {
   margin: 8px 10px 10px;
-  color: #d5defa;
+  color: #ffffff;
   font-size: 14px;
 }
 
@@ -502,6 +581,67 @@ button:hover::after,
   width: min(720px, 95vw);
 }
 
+.provider-indicator {
+  margin: 10px 0 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.4px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(16, 20, 40, 0.6));
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.28);
+}
+
+.provider-indicator[data-provider="qwen"] {
+  border-color: rgba(255, 205, 112, 0.7);
+  color: #ffe3b1;
+  box-shadow: 0 16px 30px rgba(255, 197, 100, 0.24);
+}
+
+.provider-indicator[data-provider="deepseek"] {
+  border-color: rgba(88, 166, 255, 0.85);
+  color: #d6ecff;
+  box-shadow: 0 16px 30px rgba(88, 166, 255, 0.28);
+}
+
+.provider-indicator[data-provider="openai"] {
+  border-color: rgba(148, 240, 200, 0.8);
+  color: #d9fff0;
+  box-shadow: 0 16px 30px rgba(94, 214, 156, 0.26);
+}
+
+.provider-indicator[data-provider="custom"] {
+  border-color: rgba(180, 150, 255, 0.8);
+  color: #e6dcff;
+  box-shadow: 0 16px 30px rgba(157, 78, 221, 0.28);
+}
+
+.preset-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.test-panel {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(123, 163, 255, 0.4);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(12, 18, 44, 0.58));
+}
+
+.test-panel h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.test-result {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 .preview-panel {
   margin-top: 8px;
   margin-bottom: 6px;
@@ -519,6 +659,11 @@ button:hover::after,
   -webkit-backdrop-filter: blur(10px) saturate(1.1);
   border-radius: 12px;
   padding: 10px;
+}
+
+.video-preview {
+  display: none;
+  margin-bottom: 8px;
 }
 
 .preview-main-image {
@@ -558,7 +703,7 @@ button:hover::after,
 .preview-grid-item p {
   margin: 8px;
   font-size: 13px;
-  color: #d5defa;
+  color: #ffffff;
 }
 
 .admin-table-wrap {
@@ -580,7 +725,7 @@ button:hover::after,
 }
 
 .admin-table th {
-  color: #bfd4ff;
+  color: #ffffff;
   font-size: 14px;
 }
 
@@ -597,6 +742,65 @@ button:hover::after,
 }
 
 @media (max-width: 900px) {
+  body::before {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100svh;
+    width: 100vw;
+    background-position: center center;
+    background-size: cover;
+    background-attachment: scroll;
+    transform: none;
+    filter: brightness(1.03);
+  }
+
+  .background-glow {
+    display: none;
+  }
+
+  .topbar,
+  .panel,
+  .detail-card,
+  .auth-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.2);
+  }
+
+  .topbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .brand-block {
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .topbar h1 {
+    font-size: 18px;
+  }
+
+  .topbar p {
+    font-size: 12px;
+  }
+
+  .actions {
+    max-width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding-bottom: 2px;
+  }
+
+  .actions .btn,
+  .actions button {
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
   .container {
     grid-template-columns: 1fr;
   }
@@ -610,9 +814,29 @@ button:hover::after,
     height: 60px;
   }
 
+  .topbar-main .brand-emblem {
+    width: 72px;
+    height: 72px;
+  }
+
   .login-emblem {
     width: 90px;
     height: 90px;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    padding: 8px 10px;
+  }
+
+  .topbar p {
+    display: none;
+  }
+
+  .topbar-main .brand-emblem {
+    width: 64px;
+    height: 64px;
   }
 }
 

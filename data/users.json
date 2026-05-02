@@ -18,5 +18,290 @@
     "studentId": "20230004",
     "passwordHash": "$2a$10$QbmPKicr0JVv7cJMqxmjVu5BJKjT1xMCYAYk7Ka8URBWf.woioItK",
     "mustChangePassword": true
+  },
+  {
+    "studentId": "20254546",
+    "passwordHash": "$2a$10$GHAPmVqpJU.PhpUqnoNLYuuscvQOf3BLK/zEnIz.e8yeBCITgY2iS",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254209",
+    "passwordHash": "$2a$10$EwfXkK6gNJzz90k1En.XPuiSF2HJ7OyxnUeurFTR5KAdllYso2Aoq",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250309",
+    "passwordHash": "$2a$10$MU7AIUGTz2OI9b8v/4.Kk.QN3flnU92ikR1y1VhcdnnAafr7emEq2",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254743",
+    "passwordHash": "$2a$10$TXXaD1E.tO3QX3aD4ex.Guocl55L2T2ahH0MW6xEImUCGCTlTh/S6",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254210",
+    "passwordHash": "$2a$10$GPMkSTUHsW/SqRB5E9tAGOiOcQdZG5N8GOkFpMcMRVnSIp9JuccWy",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250313",
+    "passwordHash": "$2a$10$WiSbGgMw2h0JP8YH3p.c5OESpS6C7NvkrYL4bNcN9SQ7sMTjEzpuW",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254547",
+    "passwordHash": "$2a$10$p2I6gihi93NzDX97O8dgBOhtYJLWaWPHrgUZO7kqh2A0OJ3uS5ySy",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20253495",
+    "passwordHash": "$2a$10$HBVcaOyQGBLVVhGFeVtJSOkTGEpHXEL/0PcPYQ7xw1vlE3yzvdYZC",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250784",
+    "passwordHash": "$2a$10$7EVxzeOypcV0ltHn.lfUSelwoxZaoms0oDKaOcX52U1gy0bm2AAN.",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250308",
+    "passwordHash": "$2a$10$Q8y48RUS.7tgVZEmkV72FOphYDT0mp5.vowbxLGD9gDCRwkG7IiP2",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252652",
+    "passwordHash": "$2a$10$PVehw0o98.a2EUHDMNJou.f4WaI0l7xYYPoHQKPj4H2A9L1OE2YUu",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254211",
+    "passwordHash": "$2a$10$OUIsRlnDmB/CbpcltRs1EeK7SYUDE3tBnGdQX1QfgWfCZwjIzr.3K",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254545",
+    "passwordHash": "$2a$10$vi471rUosxOg916e1VGI4OyNwRvSye3tv7pQ5XucRHnXCaX50h8eu",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254548",
+    "passwordHash": "$2a$10$DIEe6jomqL3tqwmRO6NKvOb27Nh3E8p2cMlC3U2gjx5X2aYELUL9e",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250314",
+    "passwordHash": "$2a$10$u8eGZ4J1VyMJHwXAbFUGN.GSq1gsPCTpCk/olM/JwMp0aotXW/sRa",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252492",
+    "passwordHash": "$2a$10$zQkducx/5OXdh9DAN5zyDeeyQO6TiBsdAesc1Qn7TA.jw5Pa0EVg6",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20253211",
+    "passwordHash": "$2a$10$1pc4hBZqUoT4cT9VD/Xwh.imGXnt/Hs.qhE8Bo0/thJFByhjbMcWa",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252490",
+    "passwordHash": "$2a$10$q7jjNr8nKkjjcAm.C80ufuzX/ElkjCzjKFTErhjBRsWvMJF969Aj6",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250787",
+    "passwordHash": "$2a$10$DZFOOm5RXL9K5VdqB93WDuk70cUpT.HUthov240BRAlPfgZL6xvbC",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250448",
+    "passwordHash": "$2a$10$MCDt1CbyV95fcB5c2QpgNOl7HOEv.TpauNUBu6TERgd5ywSnBe2pC",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250918",
+    "passwordHash": "$2a$10$6pPLqP2fx.VeZto6a/gPxeGrsSws6voM909jvFlq8STiscsLaAmHK",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20251899",
+    "passwordHash": "$2a$10$0Mk0H9oo8tKgwEc2/.L1Z.bLLYuElCxxywVup/ZawkP63fU26xp7K",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250802",
+    "passwordHash": "$2a$10$w8clv5BTAsMi0bryRiZ4Me4cCpAlyLD6hzbyklY3HwLvq0TbVxMH.",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254978",
+    "passwordHash": "$2a$10$z67bApUXVKOW2SAdQDSb0e1TYYoyq9cQ9tUqEFInT3IyNAMtztrfC",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250306",
+    "passwordHash": "$2a$10$8.SmOJHMdz4Cq6lQZjQEseh4x3iTKrcGO7Ao5by..OlF/eYAd5e.6",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20251753",
+    "passwordHash": "$2a$10$OW/zcwzqJ3KoRn./SCs0he7v9DviItPAmnXWg6KNXV7sbK8YFUqja",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252227",
+    "passwordHash": "$2a$10$hYtCv1r4EfVDgGJ3C78qW.IDK3m0UCwZlIdRkvY.FPcZxh66RfX4e",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250312",
+    "passwordHash": "$2a$10$j5iudbahlpNtaq43sxsKBumLTzryLwpF7h/domwZXOGv.rFWCM/Ci",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20251749",
+    "passwordHash": "$2a$10$90QDPyyrZH5Dfm1eHjVKzudOf2YI/q1FQtlG.4di.Tb7QAGTjZ0aG",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250785",
+    "passwordHash": "$2a$10$HTmFm4m19k/R1gSyqsueBekSZ7ZFtErPMtjOs.cqdvJq5gaVXAVl2",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250509",
+    "passwordHash": "$2a$10$GLYWEpCpIsdK52T1lBXqHOhGuVbwmNkvH8w.usngUJI4clZPP1ZNO",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254212",
+    "passwordHash": "$2a$10$tHi08wnE/3Ck.VskZfUj5OvNbt04OVDnIHzDs7GBS9/g9k4bGrese",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250307",
+    "passwordHash": "$2a$10$W.mlmYrh4vuv20Hfi9x8VuC0ONV7bV99QA1kesIgFGlCrBYHeaiM2",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250845",
+    "passwordHash": "$2a$10$TpDqK0r50tdAot4QAq2JK.5yp7pSLBcMoXWh1k/wRlZIBxrkF0Dne",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250488",
+    "passwordHash": "$2a$10$eBREym4AWyOx0Jqb.gf7N.L5FwZGlWJbAXvDix/EfC3C3gUM6msSa",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250311",
+    "passwordHash": "$2a$10$pLgFuBqQFa.94iFAr3coZ.0QDkSK32my09CtEkGXIU9XyuzidhcDK",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250449",
+    "passwordHash": "$2a$10$p4Ijs81pdpkbgIuWb9xbXeAIYZ12ZLue95wVyx/FPayiLGYX9uT1i",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20254744",
+    "passwordHash": "$2a$10$3Hu0vmc.Zb7KlDForO2/yuYTivfF5HXyjEvhgritibPSkSjj43u7u",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252653",
+    "passwordHash": "$2a$10$UjEwlIJyouzABwd9CQwSge3WNTMbr0mebPgXjl1NnVeO/iQZDIBOe",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252226",
+    "passwordHash": "$2a$10$lLSNcU9uZmt2uPmsX2mzTOvyNsLwAjj.iN.dRHCJP9PbMGlq20emi",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250843",
+    "passwordHash": "$2a$10$lGNNUjFFf6Csme8KHD15m./gf4HNjv7s3Flslqvd66QkJ90/ILtzW",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250510",
+    "passwordHash": "$2a$10$uMXM4JWmFbWaF5UO7pR4Ru2EPLMsPDbR7Yl.KmUqjQxpVSo0.FsGq",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252125",
+    "passwordHash": "$2a$10$FDX2WdcRgyU.oJHk7B2cYOMMLEWscse3HizSNlrjbdOaeSCDAgdTO",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250310",
+    "passwordHash": "$2a$10$IHIJ62S21wyJ7Hj7yiwR.eaVMKa7lvAFIbRTAgmqA9IVlGfjFkjhC",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20253210",
+    "passwordHash": "$2a$10$x8VLc4sELlgeixrPW.v/s.cG2HECOdxPsD5Hjlt.9fFpGOLO.ypJS",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250786",
+    "passwordHash": "$2a$10$aBoEm60CcDlM8d/BI2R1Xe4.NxpFi5kA1ujOyRFLDMlwTt0tEPr2e",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20253498",
+    "passwordHash": "$2a$10$Qvi7i3NQ9hUI4VCur.tISufbnloj1GTmT/xL5/xJ0suTXueCgGKMC",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252491",
+    "passwordHash": "$2a$10$y21DuXmapnpfxDLilGUyPOa9si0spZmSO.2g6f19kOkMrWzSntGd6",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250450",
+    "passwordHash": "$2a$10$M20nx5fKRyzl7zjRl7BBR.hAaQzLRIZoEmw4JS2OrbaRf7KEb6j4C",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252126",
+    "passwordHash": "$2a$10$jtxBePPIncCqwJb1bI5SKO4dyEDtc1jvpPpLLK66pOY4vk50pho7m",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20253496",
+    "passwordHash": "$2a$10$KACErETbQifD.hzqEgL.Re6xwFmpPdlcDBQsZ87X5N0HsggvbRlXm",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250844",
+    "passwordHash": "$2a$10$qgb4RHXWfz0NKVmLPnmyXOGQKLCjtjlJMmquuTv.Vr39SsH86gzRK",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252127",
+    "passwordHash": "$2a$10$u2w0vX3F1OOJrkh0T2THkud.p7kIZGG1kvS4aJxoyfLnmpYfpT2eq",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20253657",
+    "passwordHash": "$2a$10$MzJJXbu6Q9osOKO0UvnkR.UMfJzk4zcAQyWCc/mC/8FEMM5nJCgei",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20252493",
+    "passwordHash": "$2a$10$OIZZ5TbRz8XFNM5b8597R.R3IBGPGwMXrui7WwQen2RuicJv7C5YG",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20253497",
+    "passwordHash": "$2a$10$8ZqqoRCR6iXxwo9CC.LZHem5H3z0gGEnzT.RKlmpr04wtaJne/tDe",
+    "mustChangePassword": true
+  },
+  {
+    "studentId": "20250505",
+    "passwordHash": "$2a$10$3ddJR00cjYSmcm2tF5ZopOq38w0542j5Lyn3zoXZ3IANaHtriNH5e",
+    "mustChangePassword": true
   }
 ]

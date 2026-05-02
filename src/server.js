@@ -1,5 +1,7 @@
+const fs = require("fs");
 const path = require("path");
 const express = require("express");
+const multer = require("multer");
 const session = require("express-session");
 const {
   ensureUserFile,
@@ -18,7 +20,95 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const uploadDir = path.join(__dirname, "../public/uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname || "").toLowerCase();
+      const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext || ".jpg"}`;
+      cb(null, safeName);
+    },
+  }),
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith("image/")) {
+      cb(null, true);
+      return;
+    }
+    req.fileValidationError = "仅支持上传图片文件";
+    cb(null, false);
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});
+
+const aiConfigPath = path.join(__dirname, "../data/ai_config.json");
+
 ensureUserFile();
+
+function getAiConfig() {
+  try {
+    const raw = fs.readFileSync(aiConfigPath, "utf-8");
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object") {
+      return {};
+    }
+    return {
+      apiKey: (data.apiKey || "").trim(),
+      baseUrl: (data.baseUrl || "").trim(),
+      apiUrl: (data.apiUrl || "").trim(),
+      model: (data.model || "").trim(),
+    };
+  } catch (error) {
+    return {};
+  }
+}
+
+function detectProviderLabel(config) {
+  const baseUrl = String(config.baseUrl || "").toLowerCase();
+  const apiUrl = String(config.apiUrl || "").toLowerCase();
+  const model = String(config.model || "").toLowerCase();
+  const combined = `${baseUrl} ${apiUrl} ${model}`;
+
+  if (combined.includes("deepseek")) {
+    return "DeepSeek";
+  }
+  if (combined.includes("dashscope") || combined.includes("qwen")) {
+    return "通义千问";
+  }
+  if (!baseUrl && !apiUrl) {
+    return "OpenAI";
+  }
+  return "自定义模型";
+}
+
+function maskApiKey(rawKey) {
+  const key = String(rawKey || "").trim();
+  if (!key) {
+    return "未配置";
+  }
+  if (key.length <= 8) {
+    return `${key.slice(0, 2)}****`;
+  }
+  return `${key.slice(0, 4)}****${key.slice(-4)}`;
+}
+
+function saveAiConfig(payload) {
+  const next = {
+    apiKey: (payload.apiKey || "").trim(),
+    baseUrl: (payload.baseUrl || "").trim(),
+    apiUrl: (payload.apiUrl || "").trim(),
+    model: (payload.model || "").trim(),
+  };
+  fs.writeFileSync(aiConfigPath, JSON.stringify(next, null, 2), "utf-8");
+}
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -106,6 +196,33 @@ function qaRulesToText(qaRules) {
   return qaRules.map((item) => `${item.question} | ${item.answer}`).join("\n");
 }
 
+function parseCaptionLines(rawText) {
+  if (!rawText || !rawText.trim()) {
+    return [];
+  }
+  return rawText
+    .split("\n")
+    .map((line) => line.trim());
+}
+
+function mergeUploadedDrawings(drawingsText, uploadedFiles, captionText) {
+  const baseDrawings = parseDrawings(drawingsText || "");
+  if (!Array.isArray(uploadedFiles) || uploadedFiles.length === 0) {
+    return baseDrawings;
+  }
+
+  const captions = parseCaptionLines(captionText || "");
+  const uploadedDrawings = uploadedFiles.map((file, index) => {
+    const fallbackCaption = file.originalname ? file.originalname.replace(/\.[^.]+$/, "") : `上传图 ${index + 1}`;
+    return {
+      url: `/uploads/${file.filename}`,
+      caption: (captions[index] || "").trim() || fallbackCaption,
+    };
+  });
+
+  return [...baseDrawings, ...uploadedDrawings];
+}
+
 function normalizePlaceFromBody(body) {
   return {
     id: (body.id || "").trim(),
@@ -116,6 +233,7 @@ function normalizePlaceFromBody(body) {
     summary: (body.summary || "").trim(),
     content: (body.content || "").trim(),
     image: (body.image || "").trim(),
+    videoUrl: (body.videoUrl || "").trim(),
     drawings: parseDrawings(body.drawingsText || ""),
     qaRules: parseQaRules(body.qaRulesText || ""),
   };
@@ -178,14 +296,15 @@ function findMatchedPresetQa(place, question) {
 }
 
 async function callCloudAssistant(place, question) {
-  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+  const aiConfig = getAiConfig();
+  const apiKey = aiConfig.apiKey || process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return null;
   }
 
-  const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-  const apiUrl = process.env.AI_API_URL || `${baseUrl}/chat/completions`;
-  const model = process.env.AI_MODEL || "gpt-4o-mini";
+  const baseUrl = (aiConfig.baseUrl || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
+  const apiUrl = (aiConfig.apiUrl || process.env.AI_API_URL || `${baseUrl}/chat/completions`).trim();
+  const model = aiConfig.model || process.env.AI_MODEL || "gpt-4o-mini";
 
   const systemPrompt = "你是东北大学校史地图的讲解小助手。回答应简洁、准确、友好，优先基于给定地点资料，不编造不存在的史实。";
   const userPrompt = [
@@ -227,6 +346,7 @@ async function callCloudAssistant(place, question) {
   return {
     answer: String(content).trim(),
     model,
+    providerLabel: detectProviderLabel(aiConfig),
   };
 }
 
@@ -236,6 +356,10 @@ function normalizeCloudErrorMessage(error) {
   }
 
   const raw = String(error.message).replace(/\s+/g, " ").trim();
+  const lower = raw.toLowerCase();
+  if (lower.includes("fetch failed")) {
+    return "网络请求失败";
+  }
   if (raw.length > 120) {
     return `${raw.slice(0, 120)}...`;
   }
@@ -374,6 +498,7 @@ app.post("/api/assistant", requireAuth, async (req, res) => {
       answer: cloudAttempt.cloudResult.answer,
       source: "cloud",
       model: cloudAttempt.cloudResult.model,
+      providerLabel: cloudAttempt.cloudResult.providerLabel,
     });
   }
 
@@ -463,6 +588,59 @@ app.get("/admin", requireAuth, requireAdmin, (req, res) => {
   });
 });
 
+app.get("/admin/ai-settings", requireAuth, requireAdmin, (req, res) => {
+  const config = getAiConfig();
+  res.render("admin-ai-settings", {
+    user: req.session.user,
+    config,
+    success: req.query.success === "1",
+  });
+});
+
+app.post("/admin/ai-settings", requireAuth, requireAdmin, (req, res) => {
+  const current = getAiConfig();
+  const shouldClear = String(req.body.clearKey || "").toLowerCase() === "on";
+  const apiKey = shouldClear ? "" : (req.body.apiKey || current.apiKey || "");
+  const baseUrl = (req.body.baseUrl || current.baseUrl || "").trim();
+  const apiUrl = (req.body.apiUrl || current.apiUrl || "").trim();
+  const model = (req.body.model || current.model || "").trim();
+  saveAiConfig({ apiKey, baseUrl, apiUrl, model });
+  return res.redirect("/admin/ai-settings?success=1");
+});
+
+app.get("/admin/ai-settings/info", requireAuth, requireAdmin, (req, res) => {
+  const config = getAiConfig();
+  const apiKey = config.apiKey || process.env.AI_API_KEY || process.env.OPENAI_API_KEY || "";
+  const model = config.model || process.env.AI_MODEL || "";
+  return res.json({
+    apiKeyMasked: maskApiKey(apiKey),
+    model: model || "未配置",
+    providerLabel: detectProviderLabel(config),
+  });
+});
+
+app.post("/admin/ai-settings/test", requireAuth, requireAdmin, async (req, res) => {
+  const question = (req.body.question || "").trim() || "请简单介绍一下这个地点";
+  const places = getPlaces();
+  const place = places[0] || {
+    name: "示例地点",
+    period: "未知",
+    summary: "暂无摘要",
+    content: "暂无详细介绍",
+    drawings: [],
+  };
+
+  try {
+    const result = await callCloudAssistant(place, question);
+    if (!result) {
+      return res.status(400).json({ error: "未配置 AI 密钥或密钥为空" });
+    }
+    return res.json({ answer: result.answer, model: result.model });
+  } catch (error) {
+    return res.status(500).json({ error: normalizeCloudErrorMessage(error) });
+  }
+});
+
 app.get("/admin/place/new", requireAuth, requireAdmin, (req, res) => {
   res.render("admin-place-form", {
     user: req.session.user,
@@ -476,15 +654,51 @@ app.get("/admin/place/new", requireAuth, requireAdmin, (req, res) => {
       summary: "",
       content: "",
       image: "",
+      videoUrl: "",
       drawingsText: "",
+      drawingsCaptions: "",
       qaRulesText: "",
     },
     error: null,
   });
 });
 
-app.post("/admin/place/new", requireAuth, requireAdmin, (req, res) => {
+app.post("/admin/place/new", requireAuth, requireAdmin, upload.fields([
+  { name: "imageFile", maxCount: 1 },
+  { name: "drawingFiles", maxCount: 12 },
+]), (req, res) => {
   const place = normalizePlaceFromBody(req.body);
+  const imageFile = req.files?.imageFile?.[0];
+  if (imageFile) {
+    place.image = `/uploads/${imageFile.filename}`;
+  }
+  place.drawings = mergeUploadedDrawings(req.body.drawingsText, req.files?.drawingFiles, req.body.drawingsCaptions);
+  if (req.fileValidationError) {
+    return res.status(400).render("admin-place-form", {
+      user: req.session.user,
+      mode: "create",
+      place: {
+        ...place,
+        drawingsText: req.body.drawingsText || "",
+        drawingsCaptions: req.body.drawingsCaptions || "",
+        qaRulesText: req.body.qaRulesText || "",
+      },
+      error: req.fileValidationError,
+    });
+  }
+  if (!place.image) {
+    return res.status(400).render("admin-place-form", {
+      user: req.session.user,
+      mode: "create",
+      place: {
+        ...place,
+        drawingsText: req.body.drawingsText || "",
+        drawingsCaptions: req.body.drawingsCaptions || "",
+        qaRulesText: req.body.qaRulesText || "",
+      },
+      error: "请上传主图后再提交",
+    });
+  }
   const error = validatePlace(place, true);
   if (error) {
     return res.status(400).render("admin-place-form", {
@@ -493,6 +707,7 @@ app.post("/admin/place/new", requireAuth, requireAdmin, (req, res) => {
       place: {
         ...place,
         drawingsText: req.body.drawingsText || "",
+        drawingsCaptions: req.body.drawingsCaptions || "",
         qaRulesText: req.body.qaRulesText || "",
       },
       error,
@@ -506,6 +721,7 @@ app.post("/admin/place/new", requireAuth, requireAdmin, (req, res) => {
       place: {
         ...place,
         drawingsText: req.body.drawingsText || "",
+        drawingsCaptions: req.body.drawingsCaptions || "",
         qaRulesText: req.body.qaRulesText || "",
       },
       error: "地点 ID 已存在，请更换",
@@ -528,13 +744,17 @@ app.get("/admin/place/:id/edit", requireAuth, requireAdmin, (req, res) => {
     place: {
       ...place,
       drawingsText: drawingsToText(place.drawings),
+      drawingsCaptions: "",
       qaRulesText: qaRulesToText(place.qaRules),
     },
     error: null,
   });
 });
 
-app.post("/admin/place/:id/edit", requireAuth, requireAdmin, (req, res) => {
+app.post("/admin/place/:id/edit", requireAuth, requireAdmin, upload.fields([
+  { name: "imageFile", maxCount: 1 },
+  { name: "drawingFiles", maxCount: 12 },
+]), (req, res) => {
   const currentId = req.params.id;
   const existing = getPlaceById(currentId);
   if (!existing) {
@@ -545,6 +765,30 @@ app.post("/admin/place/:id/edit", requireAuth, requireAdmin, (req, res) => {
     ...req.body,
     id: currentId,
   });
+  const imageFile = req.files?.imageFile?.[0];
+  if (imageFile) {
+    payload.image = `/uploads/${imageFile.filename}`;
+  }
+  if (!payload.image) {
+    payload.image = existing.image;
+  }
+  payload.drawings = mergeUploadedDrawings(req.body.drawingsText, req.files?.drawingFiles, req.body.drawingsCaptions);
+  if (!payload.drawings || payload.drawings.length === 0) {
+    payload.drawings = existing.drawings || [];
+  }
+  if (req.fileValidationError) {
+    return res.status(400).render("admin-place-form", {
+      user: req.session.user,
+      mode: "edit",
+      place: {
+        ...payload,
+        drawingsText: req.body.drawingsText || "",
+        drawingsCaptions: req.body.drawingsCaptions || "",
+        qaRulesText: req.body.qaRulesText || "",
+      },
+      error: req.fileValidationError,
+    });
+  }
   const error = validatePlace(payload, false);
   if (error) {
     return res.status(400).render("admin-place-form", {
@@ -553,6 +797,7 @@ app.post("/admin/place/:id/edit", requireAuth, requireAdmin, (req, res) => {
       place: {
         ...payload,
         drawingsText: req.body.drawingsText || "",
+        drawingsCaptions: req.body.drawingsCaptions || "",
         qaRulesText: req.body.qaRulesText || "",
       },
       error,
