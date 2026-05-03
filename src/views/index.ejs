@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
+  <canvas id="particles-canvas"></canvas>
   <header class="topbar topbar-main">
     <div class="brand-block">
       <img src="/images/neusign.jpg" alt="东北大学校徽" class="brand-emblem" />
@@ -27,6 +28,17 @@
     </div>
   </header>
 
+  <section class="hero-stats">
+    <div class="stat-item">
+      <span class="stat-number"><%= places.length %></span>
+      <span class="stat-label">历史地点</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number">南湖校区</span>
+      <span class="stat-label">东北大学</span>
+    </div>
+  </section>
+
   <main class="container">
     <section class="panel">
       <h2>地图导航</h2>
@@ -37,8 +49,8 @@
     <aside class="panel list-panel">
       <h2>地点列表</h2>
       <ul class="place-list">
-        <% places.forEach((place) => { %>
-          <li>
+        <% places.forEach((place, idx) => { %>
+          <li class="stagger-item stagger-<%= (idx % 8) + 1 %>">
             <a href="/place/<%= place.id %>">
               <strong><%= place.name %></strong>
               <span><%= place.summary %></span>
@@ -166,5 +178,108 @@
       `);
     });
   </script>
+
+  <script>
+    (function() {
+      var canvas = document.getElementById("particles-canvas");
+      if (!canvas) return;
+      var ctx = canvas.getContext("2d");
+      var w, h, mouseX = -999, mouseY = -999;
+      var particles = [];
+      var maxP = 80;
+      var connectDist = 150;
+
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener("resize", resize);
+
+      document.addEventListener("mousemove", function(e) {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+      document.addEventListener("mouseleave", function() {
+        mouseX = -999;
+        mouseY = -999;
+      });
+
+      for (var i = 0; i < maxP; i++) {
+        var p = {
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * 2.2 + 0.6,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.35,
+          o: Math.random() * 0.6 + 0.25
+        };
+        p.baseO = p.o;
+        particles.push(p);
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+
+        for (var i = 0; i < particles.length; i++) {
+          var p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0) p.x = w;
+          if (p.x > w) p.x = 0;
+          if (p.y < 0) p.y = h;
+          if (p.y > h) p.y = 0;
+
+          // 鼠标排斥
+          var dx = p.x - mouseX;
+          var dy = p.y - mouseY;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120 && dist > 0) {
+            p.x += (dx / dist) * 1.2;
+            p.y += (dy / dist) * 1.2;
+            p.o = Math.min(1, p.baseO + 0.4);
+          } else {
+            p.o += (p.baseO - p.o) * 0.05;
+          }
+
+          // 星座连线
+          for (var j = i + 1; j < particles.length; j++) {
+            var q = particles[j];
+            var cdx = p.x - q.x;
+            var cdy = p.y - q.y;
+            var cdist = Math.sqrt(cdx * cdx + cdy * cdy);
+            if (cdist < connectDist) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(q.x, q.y);
+              ctx.strokeStyle = "rgba(124,194,255," + (0.08 * (1 - cdist / connectDist)) + ")";
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }
+          }
+        }
+
+        for (var k = 0; k < particles.length; k++) {
+          var pk = particles[k];
+          ctx.beginPath();
+          ctx.arc(pk.x, pk.y, pk.r, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(124,194,255," + pk.o + ")";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(pk.x, pk.y, pk.r * 3, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(157,78,221," + (pk.o * 0.08) + ")";
+          ctx.fill();
+        }
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+  </script>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 东北大学校史地图 &middot; 记录历史，传承精神</p>
+    <p>联系QQ：228343975</p>
+  </footer>
 </body>
 </html>
