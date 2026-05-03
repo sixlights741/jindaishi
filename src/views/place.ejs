@@ -63,8 +63,34 @@
         </section>
       <% } %>
 
-      <section class="assistant-panel" data-place-id="<%= place.id %>" data-user-id="<%= user.studentId %>">
-        <h3 class="gallery-title">AI 讲解助手</h3>
+      <% if (Array.isArray(place.drawings) && place.drawings.length > 0) { %>
+        <h3 class="gallery-title">小组手绘图展示</h3>
+        <section class="drawing-grid">
+          <% place.drawings.forEach((drawing) => { %>
+            <article class="drawing-item">
+              <img src="<%= drawing.url %>" alt="<%= drawing.caption || (place.name + '手绘图') %>" />
+              <p><%= drawing.caption || '手绘图' %></p>
+            </article>
+          <% }) %>
+        </section>
+      <% } %>
+    </article>
+  </main>
+
+  <!-- AI 悬浮球 -->
+  <div class="ai-float-wrapper" id="aiFloatWrapper">
+    <div class="ai-float-ball" id="aiFloatBall" title="AI 讲解助手">NEU</div>
+    <span class="ai-float-ball-label">AI 助手</span>
+  </div>
+
+  <!-- AI 对话框 -->
+  <div class="ai-float-overlay" id="aiFloatOverlay">
+    <div class="ai-float-dialog">
+      <div class="ai-dialog-header">
+        <h3>🤖 AI 讲解助手 · <%= place.name %></h3>
+        <button class="ai-dialog-close" id="aiDialogClose" type="button">&times;</button>
+      </div>
+      <div class="ai-dialog-body">
         <div class="assistant-suggestions" id="assistantSuggestions">
           <% if (Array.isArray(place.qaRules) && place.qaRules.length > 0) { %>
             <% place.qaRules.forEach((rule) => { %>
@@ -82,38 +108,52 @@
           <input id="assistantQuestion" type="text" maxlength="300" placeholder="例如：请用三句话介绍这个地点" required />
           <button type="submit">提问</button>
         </form>
-      </section>
+      </div>
+    </div>
+  </div>
 
-      <% if (Array.isArray(place.drawings) && place.drawings.length > 0) { %>
-        <h3 class="gallery-title">小组手绘图展示</h3>
-        <section class="drawing-grid">
-          <% place.drawings.forEach((drawing) => { %>
-            <article class="drawing-item">
-              <img src="<%= drawing.url %>" alt="<%= drawing.caption || (place.name + '手绘图') %>" />
-              <p><%= drawing.caption || '手绘图' %></p>
-            </article>
-          <% }) %>
-        </section>
-      <% } %>
-    </article>
-  </main>
   <script>
     (function () {
-      const panel = document.querySelector(".assistant-panel");
-      if (!panel) {
-        return;
+      var placeId = '<%= place.id %>';
+      var userId = '<%= user.studentId %>';
+      var form = document.getElementById("assistantForm");
+      var questionInput = document.getElementById("assistantQuestion");
+      var messages = document.getElementById("assistantMessages");
+      var suggestions = document.getElementById("assistantSuggestions");
+      var clearBtn = document.getElementById("assistantClearBtn");
+      var submitButton = form.querySelector("button[type='submit']");
+      var storageKey = "assistant-chat-" + userId + "-" + placeId;
+      var initialMessageHtml = '<article class="assistant-bubble assistant-bubble-bot">你好，我是讲解小助手 👋 请输入你想了解的问题。</article>';
+
+      // 悬浮球 / 对话框开关
+      var floatWrapper = document.getElementById("aiFloatWrapper");
+      var floatBall = document.getElementById("aiFloatBall");
+      var floatOverlay = document.getElementById("aiFloatOverlay");
+      var dialogClose = document.getElementById("aiDialogClose");
+
+      function openDialog() {
+        floatOverlay.classList.add("open");
+        floatWrapper.style.display = "none";
+        questionInput.focus();
       }
 
-      const placeId = panel.dataset.placeId;
-      const userId = panel.dataset.userId || "unknown";
-      const form = document.getElementById("assistantForm");
-      const questionInput = document.getElementById("assistantQuestion");
-      const messages = document.getElementById("assistantMessages");
-      const suggestions = document.getElementById("assistantSuggestions");
-      const clearBtn = document.getElementById("assistantClearBtn");
-      const submitButton = form.querySelector("button[type='submit']");
-      const storageKey = `assistant-chat-${userId}-${placeId}`;
-      const initialMessageHtml = `<article class="assistant-bubble assistant-bubble-bot">你好，我是讲解小助手 👋 请输入你想了解的问题。</article>`;
+      function closeDialog() {
+        floatOverlay.classList.remove("open");
+        floatWrapper.style.display = "";
+      }
+
+      floatBall.addEventListener("click", openDialog);
+      dialogClose.addEventListener("click", closeDialog);
+      floatOverlay.addEventListener("click", function (e) {
+        if (e.target === floatOverlay) {
+          closeDialog();
+        }
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && floatOverlay.classList.contains("open")) {
+          closeDialog();
+        }
+      });
 
       function resetConversation() {
         messages.innerHTML = initialMessageHtml;
@@ -126,7 +166,7 @@
       }
 
       function restoreHistory() {
-        const saved = sessionStorage.getItem(storageKey);
+        var saved = sessionStorage.getItem(storageKey);
         if (!saved) {
           resetConversation();
           return;
@@ -136,8 +176,8 @@
       }
 
       function appendBubble(text, role) {
-        const article = document.createElement("article");
-        article.className = `assistant-bubble ${role === "user" ? "assistant-bubble-user" : "assistant-bubble-bot"}`;
+        var article = document.createElement("article");
+        article.className = "assistant-bubble " + (role === "user" ? "assistant-bubble-user" : "assistant-bubble-bot");
         article.textContent = text;
         messages.appendChild(article);
         messages.scrollTop = messages.scrollHeight;
@@ -155,17 +195,17 @@
         submitButton.textContent = "思考中...";
 
         try {
-          const response = await fetch("/api/assistant", {
+          var response = await fetch("/api/assistant", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ placeId, question }),
+            body: JSON.stringify({ placeId: placeId, question: question }),
           });
 
-          const contentType = response.headers.get("content-type") || "";
-          const isJson = contentType.includes("application/json");
-          const payload = isJson ? await response.json() : null;
+          var contentType = response.headers.get("content-type") || "";
+          var isJson = contentType.includes("application/json");
+          var payload = isJson ? await response.json() : null;
 
           if (response.status === 401) {
             appendBubble("登录已失效，请重新登录后再继续提问。", "bot");
@@ -178,7 +218,7 @@
           }
 
           if (!response.ok) {
-            const message = payload && payload.error ? payload.error : `请求失败（${response.status}）`;
+            var message = payload && payload.error ? payload.error : "请求失败（" + response.status + "）";
             appendBubble(message, "bot");
             return;
           }
@@ -188,17 +228,17 @@
             return;
           }
 
-          const sourceLabelMap = {
+          var sourceLabelMap = {
             cloud: payload.providerLabel || payload.model || "云端模型",
             preset: "预设问答",
             local: "本地规则",
             "fallback-fixed": "固定兜底",
           };
-          const sourceLabel = sourceLabelMap[payload.source] || "本地规则";
-          const fallbackTip = payload.source !== "cloud" && payload.fallbackReason
-            ? `\n（云端降级原因：${payload.fallbackReason}）`
+          var sourceLabel = sourceLabelMap[payload.source] || "本地规则";
+          var fallbackTip = payload.source !== "cloud" && payload.fallbackReason
+            ? "\n（云端降级原因：" + payload.fallbackReason + "）"
             : "";
-          appendBubble(`${payload.answer}\n\n（回答来源：${sourceLabel}）${fallbackTip}`, "bot");
+          appendBubble(payload.answer + "\n\n（回答来源：" + sourceLabel + "）" + fallbackTip, "bot");
         } catch (error) {
           appendBubble("网络请求失败，请稍后重试。", "bot");
         } finally {
@@ -208,27 +248,27 @@
         }
       }
 
-      form.addEventListener("submit", async (event) => {
+      form.addEventListener("submit", async function (event) {
         event.preventDefault();
-        const question = (questionInput.value || "").trim();
+        var question = (questionInput.value || "").trim();
         await askQuestion(question);
       });
 
-      suggestions.addEventListener("click", async (event) => {
-        const target = event.target.closest(".suggestion-chip");
+      suggestions.addEventListener("click", async function (event) {
+        var target = event.target.closest(".suggestion-chip");
         if (!target) {
           return;
         }
-        const question = (target.dataset.question || "").trim();
-        const presetAnswer = (target.dataset.answer || "").trim();
+        var question = (target.dataset.question || "").trim();
+        var presetAnswer = (target.dataset.answer || "").trim();
         if (!question || !presetAnswer) {
           return;
         }
         appendBubble(question, "user");
-        appendBubble(`${presetAnswer}\n\n（回答来源：预设问答）`, "bot");
+        appendBubble(presetAnswer + "\n\n（回答来源：预设问答）", "bot");
       });
 
-      clearBtn.addEventListener("click", () => {
+      clearBtn.addEventListener("click", function () {
         resetConversation();
         questionInput.focus();
       });
@@ -242,10 +282,12 @@
     <p>联系QQ：228343975</p>
   </footer>
 
+  <% if (user && user.isAdmin) { %>
   <div class="visit-badge">
     <span class="visit-icon">👁</span>
     <span>累计访问</span>
     <span class="visit-count"><%= typeof visitCount !== 'undefined' ? visitCount : 0 %></span>
   </div>
+  <% } %>
 </body>
 </html>

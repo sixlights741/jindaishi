@@ -282,10 +282,12 @@
     <p>联系QQ：228343975</p>
   </footer>
 
+  <% if (user && user.isAdmin) { %>
   <div class="visit-badge">
     <span class="visit-icon">👁</span>
     <span>累计访问</span>
     <span class="visit-count"><%= typeof visitCount !== 'undefined' ? visitCount : 0 %></span>
   </div>
+  <% } %>
 </body>
 </html>

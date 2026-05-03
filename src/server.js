@@ -73,16 +73,6 @@ function incrementVisitCount() {
   return next;
 }
 
-// 每次新会话首次访问时计数 +1，避免刷新重复计数
-app.use((req, res, next) => {
-  res.locals.visitCount = getVisitCount();
-  if (!req.session.visitCounted) {
-    req.session.visitCounted = true;
-    res.locals.visitCount = incrementVisitCount();
-  }
-  next();
-});
-
 function getAiConfig() {
   try {
     const raw = fs.readFileSync(aiConfigPath, "utf-8");
@@ -156,6 +146,16 @@ app.use(
   })
 );
 app.use(express.static(path.join(__dirname, "../public")));
+
+// 每次新会话首次访问时计数 +1，避免刷新重复计数
+app.use((req, res, next) => {
+  res.locals.visitCount = getVisitCount();
+  if (!req.session.visitCounted) {
+    req.session.visitCounted = true;
+    res.locals.visitCount = incrementVisitCount();
+  }
+  next();
+});
 
 function requireAuth(req, res, next) {
   if (req.session.user) {
