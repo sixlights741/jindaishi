@@ -2,5 +2,5 @@
   "apiKey": "sk-a63a5c18c24a4c77938e628889dbb904",
   "baseUrl": "https://api.deepseek.com/v1",
   "apiUrl": "",
-  "model": "deepseek-chat"
+  "model": "deepseek-v4-flash"
 }

@@ -63,18 +63,12 @@
       <% } %>
 
       <section class="assistant-panel" data-place-id="<%= place.id %>" data-user-id="<%= user.studentId %>">
-        <h3 class="gallery-title">AI 讲解小助手（基础版）</h3>
-        <p class="subtitle">你可以直接点击预设问题，也可以自行输入提问。</p>
+        <h3 class="gallery-title">AI 讲解助手</h3>
         <div class="assistant-suggestions" id="assistantSuggestions">
           <% if (Array.isArray(place.qaRules) && place.qaRules.length > 0) { %>
             <% place.qaRules.forEach((rule) => { %>
               <button type="button" class="suggestion-chip" data-question="<%= rule.question %>" data-answer="<%= rule.answer %>"><%= rule.question %></button>
             <% }) %>
-          <% } else { %>
-            <button type="button" class="suggestion-chip" data-question="请用三句话介绍这个地点" data-answer="<%= place.summary %>\n\n补充：<%= place.content %>">三句话介绍</button>
-            <button type="button" class="suggestion-chip" data-question="这个地点最重要的历史意义是什么？" data-answer="<%= place.summary %>">历史意义</button>
-            <button type="button" class="suggestion-chip" data-question="这里有哪些手绘图亮点？" data-answer="<%= Array.isArray(place.drawings) && place.drawings.length > 0 ? ('这里共有 ' + place.drawings.length + ' 张手绘图，建议先看第一张：' + (place.drawings[0].caption || '手绘图')) : '当前地点暂未配置手绘图。' %>">手绘图亮点</button>
-            <button type="button" class="suggestion-chip" data-question="这个地点对应的历史时期是什么？" data-answer="该地点的历史时期是：<%= place.period %>">历史时期</button>
           <% } %>
         </div>
         <button type="button" id="assistantClearBtn" class="btn ghost">清空对话记录</button>
