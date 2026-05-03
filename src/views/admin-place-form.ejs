@@ -109,6 +109,8 @@
   const videoPreview = document.getElementById("videoPreview");
   const videoPreviewFrame = document.getElementById("videoPreviewFrame");
   const videoPreviewHint = document.getElementById("videoPreviewHint");
+  const MAX_UPLOAD_MB = 20;
+  const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
       function normalizeLine(line) {
         const parts = line.split("|");
@@ -256,6 +258,12 @@
       if (imageFileInput) {
         imageFileInput.addEventListener("change", () => {
           const file = imageFileInput.files && imageFileInput.files[0];
+          if (file && file.size > MAX_UPLOAD_BYTES) {
+            imageFileInput.value = '';
+            showNotice(`主图超过 ${MAX_UPLOAD_MB}MB，请压缩后再上传。`, 'error');
+            setMainPreview();
+            return;
+          }
           if (file) {
             const previewUrl = URL.createObjectURL(file);
             setMainPreview(previewUrl);
@@ -304,7 +312,17 @@
         el.style.borderRadius = '8px';
       }
       if (drawingFilesInput) {
-        drawingFilesInput.addEventListener("change", renderDrawingsPreview);
+        drawingFilesInput.addEventListener("change", () => {
+          const files = drawingFilesInput.files ? Array.from(drawingFilesInput.files) : [];
+          const tooLarge = files.find((file) => file.size > MAX_UPLOAD_BYTES);
+          if (tooLarge) {
+            drawingFilesInput.value = '';
+            showNotice(`手绘图单张超过 ${MAX_UPLOAD_MB}MB，请压缩后再上传。`, 'error');
+            renderDrawingsPreview();
+            return;
+          }
+          renderDrawingsPreview();
+        });
       }
       drawingsTextInput.addEventListener("input", renderDrawingsPreview);
       if (videoInput) {
