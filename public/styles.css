@@ -829,6 +829,17 @@ button:hover::after,
     width: 90px;
     height: 90px;
   }
+
+  .detail-container {
+    width: 100%;
+    padding: 16px 12px 20px;
+    place-items: center;
+  }
+
+  .detail-card {
+    width: 100%;
+    margin: 0 auto;
+  }
 }
 
 @media (max-width: 520px) {
