@@ -16,10 +16,6 @@
       {
         "url": "/images/drawings/lib-old-b.jpg",
         "caption": "原图书馆旧址平面草图"
-      },
-      {
-        "url": "/uploads/1777736808979-89137265.jpg",
-        "caption": "Screenshot_20260309_193308"
       }
     ],
     "qaRules": [],
@@ -33,9 +29,19 @@
     "period": "1950s-至今",
     "summary": "学校多个关键发展时期的重要教学与行政空间。",
     "content": "主楼历史区域是校园认知度最高的建筑群之一，承担教学、办公、学术活动等多重功能。许多重要会议、教学改革和校庆活动都在这一带发生。",
-    "image": "https://images.unsplash.com/photo-1496307653780-42ee777d4833?auto=format&fit=crop&w=1200&q=80",
-    "drawings": [],
-    "qaRules": []
+    "image": "/uploads/1777800609046-611327765.jpg",
+    "drawings": [
+      {
+        "url": "/uploads/1777800609093-708959850.jpg",
+        "caption": "129704d8489c2599c37b144a48464e72"
+      },
+      {
+        "url": "/uploads/1777800609124-206833734.jpg",
+        "caption": "497410c3dd866bcf08a33e32fff7f872"
+      }
+    ],
+    "qaRules": [],
+    "videoUrl": "https://www.bilibili.com/video/BV11sR7BhEfW/?spm_id_from=333.1007.tianma.1-3-3.click&vd_source=a28378bdd3cc4e885eef4c180631183b"
   },
   {
     "id": "industrial-lab",
@@ -45,9 +51,19 @@
     "period": "1960s-1990s",
     "summary": "服务国家工业建设的人才培养与实验实践基地。",
     "content": "工业实验基地旧址反映了东北大学在工科教育中的鲜明特色。很多早期实验课程在此开展，师生围绕材料、冶金、机械等方向形成了扎实的工程实践传统。",
-    "image": "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80",
-    "drawings": [],
-    "qaRules": []
+    "image": "/uploads/1777800698637-847770633.jpg",
+    "drawings": [
+      {
+        "url": "/uploads/1777800698675-872360039.png",
+        "caption": "0"
+      },
+      {
+        "url": "/uploads/1777800698690-559799735.png",
+        "caption": "2"
+      }
+    ],
+    "qaRules": [],
+    "videoUrl": "https://www.bilibili.com/video/BV1suREBhEj8/?spm_id_from=333.1007.tianma.1-1-1.click&vd_source=a28378bdd3cc4e885eef4c180631183b"
   },
   {
     "id": "1site",
@@ -57,12 +73,22 @@
     "period": "2029",
     "summary": "测试图",
     "content": "没啥可介绍",
-    "image": "/images/drawings/frame_0076.png",
+    "image": "/uploads/1777800729017-273074371.jpg",
     "drawings": [
       {
-        "url": "/images/drawings/frame_0020.png",
-        "caption": "不用说明"
+        "url": "/uploads/1777800729054-188094403.jpg",
+        "caption": "33611d891fa712872a0d6d925c769d99d3d99533"
+      },
+      {
+        "url": "/uploads/1777800729061-849478087.jpg",
+        "caption": "129704d8489c2599c37b144a48464e72"
+      },
+      {
+        "url": "/uploads/1777800729099-742854755.jpg",
+        "caption": "497410c3dd866bcf08a33e32fff7f872"
       }
-    ]
+    ],
+    "videoUrl": "https://www.bilibili.com/video/BV1HwRgBPEbb/?spm_id_from=333.1007.tianma.1-3-3.click&vd_source=a28378bdd3cc4e885eef4c180631183b",
+    "qaRules": []
   }
 ]
