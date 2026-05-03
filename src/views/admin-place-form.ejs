@@ -11,6 +11,8 @@
     <h1><%= mode === 'create' ? '新增地点' : '编辑地点' %></h1>
   <p class="subtitle">支持主图与多张手绘图，均可直接从本地上传。</p>
 
+    <div id="adminNotice" class="notice" style="display:none; margin-top: 10px;"></div>
+
     <% if (error) { %>
       <p class="error"><%= error %></p>
     <% } %>
@@ -59,8 +61,13 @@
       <section class="preview-panel" aria-live="polite">
         <h2>主图预览</h2>
         <div class="preview-card">
-          <img id="mainImagePreview" class="preview-main-image" src="" alt="主图预览" />
-          <p id="mainImageHint" class="preview-hint">请输入主图 URL 以查看预览</p>
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <img id="mainImagePreview" class="preview-main-image" src="" alt="主图预览" />
+            <div>
+              <p id="mainImageHint" class="preview-hint">请输入主图 URL 以查看预览</p>
+              <button type="button" id="deleteMainImageBtn" style="display:none;margin-top:8px;">删除主图</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -95,8 +102,9 @@
   const imageFileInput = document.getElementById("imageFileInput");
   const drawingFilesInput = document.getElementById("drawingFilesInput");
   const drawingsTextInput = document.getElementById("drawingsTextInput");
-      const drawingsPreviewGrid = document.getElementById("drawingsPreviewGrid");
+  const drawingsPreviewGrid = document.getElementById("drawingsPreviewGrid");
       const drawingsEmptyHint = document.getElementById("drawingsEmptyHint");
+  const deleteMainImageBtn = document.getElementById('deleteMainImageBtn');
   const videoInput = document.querySelector("input[name='videoUrl']");
   const videoPreview = document.getElementById("videoPreview");
   const videoPreviewFrame = document.getElementById("videoPreviewFrame");
@@ -116,12 +124,15 @@
           mainImagePreview.removeAttribute("src");
           mainImageHint.textContent = "请输入主图 URL 以查看预览";
           mainImageHint.style.display = "block";
+          deleteMainImageBtn.style.display = 'none';
           return;
         }
 
         mainImagePreview.style.display = "block";
         mainImagePreview.src = url;
         mainImageHint.style.display = "none";
+        // show delete button for any existing image
+        deleteMainImageBtn.style.display = 'inline-block';
       }
 
       function renderDrawingsPreview() {
@@ -150,7 +161,7 @@
 
         drawingsEmptyHint.style.display = "none";
 
-  [...uploadedItems, ...items].forEach((item, index) => {
+        [...uploadedItems, ...items].forEach((item, index) => {
           const card = document.createElement("article");
           card.className = "preview-grid-item";
 
@@ -163,6 +174,41 @@
 
           card.appendChild(img);
           card.appendChild(caption);
+
+          // If this item is an existing drawing (not newly uploaded preview), render a delete button
+          if (!item.isUpload && item.url) {
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.textContent = '删除';
+            del.style.marginTop = '6px';
+            del.addEventListener('click', async () => {
+              if (!confirm('确认删除该手绘图？此操作会从服务器删除文件且不可恢复。')) return;
+              try {
+                const res = await fetch(`/admin/place/${encodeURIComponent((document.querySelector("input[name='id']").value||'').trim())}/image/delete`, {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({ type: 'drawing', url: item.url })
+                });
+                const data = await res.json();
+                if (data && data.success) {
+                  // remove this card from DOM and update hidden drawingsText
+                  card.remove();
+                  // rebuild drawingsText from returned place.drawings
+                  const newText = (data.place && Array.isArray(data.place.drawings)) ? data.place.drawings.map(d => `${d.url} | ${d.caption || ''}`).join('\n') : '';
+                  drawingsTextInput.value = newText;
+                  renderDrawingsPreview();
+                  showNotice('手绘图已删除', 'success');
+                } else {
+                  showNotice((data && data.error) || '删除失败', 'error');
+                }
+              } catch (err) {
+                console.error(err);
+                showNotice('删除请求出错', 'error');
+              }
+            });
+            card.appendChild(del);
+          }
+
           drawingsPreviewGrid.appendChild(card);
         });
       }
@@ -217,6 +263,45 @@
           }
           setMainPreview();
         });
+      }
+      // delete main image handler
+      if (deleteMainImageBtn) {
+        deleteMainImageBtn.addEventListener('click', async () => {
+          if (!confirm('确认删除主图？此操作会从服务器删除文件且不可恢复。')) return;
+          const placeId = (document.querySelector("input[name='id']").value || '').trim();
+          const url = (imageInput.value || '').trim();
+          try {
+            const res = await fetch(`/admin/place/${encodeURIComponent(placeId)}/image/delete`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ type: 'main', url })
+            });
+            const data = await res.json();
+            if (data && data.success) {
+              // clear hidden input and preview
+              imageInput.value = '';
+              setMainPreview();
+              showNotice('主图已删除，您可以重新上传', 'success');
+            } else {
+              showNotice((data && data.error) || '删除失败', 'error');
+            }
+          } catch (err) {
+            console.error(err);
+            showNotice('删除请求出错', 'error');
+          }
+        });
+      }
+
+      function showNotice(message, type) {
+        const el = document.getElementById('adminNotice');
+        if (!el) return;
+        el.textContent = message || '';
+        el.style.display = message ? 'block' : 'none';
+        el.style.background = type === 'success' ? 'rgba(20, 120, 80, 0.12)' : 'rgba(180, 40, 40, 0.12)';
+        el.style.border = type === 'success' ? '1px solid rgba(20, 120, 80, 0.35)' : '1px solid rgba(180, 40, 40, 0.35)';
+        el.style.color = type === 'success' ? '#0f6a4a' : '#9d1c1c';
+        el.style.padding = '8px 10px';
+        el.style.borderRadius = '8px';
       }
       if (drawingFilesInput) {
         drawingFilesInput.addEventListener("change", renderDrawingsPreview);

@@ -813,6 +813,82 @@ app.post("/admin/place/:id/delete", requireAuth, requireAdmin, (req, res) => {
   return res.redirect("/admin");
 });
 
+// 删除已上传的主图或手绘图（只允许管理员）
+app.post('/admin/place/:id/image/delete', requireAuth, requireAdmin, (req, res) => {
+  try {
+    const id = req.params.id;
+    const body = req.body || {};
+    const type = String(body.type || '').trim(); // 'main' or 'drawing'
+    const url = String(body.url || '').trim();
+
+    if (!id || !type || !url) {
+      return res.status(400).json({ success: false, error: '缺少参数' });
+    }
+
+    const place = getPlaceById(id);
+    if (!place) {
+      return res.status(404).json({ success: false, error: '未找到地点' });
+    }
+
+    let changed = false;
+
+    // Helper to delete file under uploadDir when url references /uploads/
+    function tryUnlinkUploadedUrl(resourceUrl) {
+      try {
+        if (!resourceUrl || typeof resourceUrl !== 'string') return false;
+        if (!resourceUrl.startsWith('/uploads/')) return false;
+        const filename = resourceUrl.replace('/uploads/', '');
+        if (!filename || filename.includes('..') || filename.includes('/')) return false;
+        const filePath = path.join(uploadDir, filename);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          return true;
+        }
+      } catch (e) {
+        // ignore unlink errors
+      }
+      return false;
+    }
+
+    if (type === 'main') {
+      if (place.image && place.image === url) {
+        // clear the image reference
+        place.image = '';
+        changed = true;
+        tryUnlinkUploadedUrl(url);
+      } else {
+        return res.status(400).json({ success: false, error: '主图地址不匹配' });
+      }
+    } else if (type === 'drawing') {
+      if (!Array.isArray(place.drawings) || place.drawings.length === 0) {
+        return res.status(400).json({ success: false, error: '该地点没有手绘图' });
+      }
+      const beforeLen = place.drawings.length;
+      place.drawings = place.drawings.filter((d) => String(d.url || '') !== url);
+      if (place.drawings.length !== beforeLen) {
+        changed = true;
+        tryUnlinkUploadedUrl(url);
+      } else {
+        return res.status(400).json({ success: false, error: '未找到对应的手绘图' });
+      }
+    } else {
+      return res.status(400).json({ success: false, error: '未知的删除类型' });
+    }
+
+    if (changed) {
+      // persist change
+      updatePlace(id, place);
+      // return updated place (including drawings array)
+      return res.json({ success: true, place });
+    }
+
+    return res.status(500).json({ success: false, error: '未发生变更' });
+  } catch (error) {
+    console.error('删除图片时出错', error && error.stack ? error.stack : error);
+    return res.status(500).json({ success: false, error: '服务器错误' });
+  }
+});
+
 app.use((req, res) => {
   res.status(404).render("not-found", { message: "页面不存在" });
 });
