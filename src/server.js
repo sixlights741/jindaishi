@@ -53,6 +53,36 @@ const aiConfigPath = path.join(__dirname, "../data/ai_config.json");
 
 ensureUserFile();
 
+// ===== 访问计数器 =====
+const visitCounterPath = path.join(__dirname, "../data/visit-counter.json");
+
+function getVisitCount() {
+  try {
+    const raw = fs.readFileSync(visitCounterPath, "utf-8");
+    const data = JSON.parse(raw);
+    return typeof data.count === "number" ? data.count : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function incrementVisitCount() {
+  const current = getVisitCount();
+  const next = current + 1;
+  fs.writeFileSync(visitCounterPath, JSON.stringify({ count: next }, null, 2), "utf-8");
+  return next;
+}
+
+// 每次新会话首次访问时计数 +1，避免刷新重复计数
+app.use((req, res, next) => {
+  res.locals.visitCount = getVisitCount();
+  if (!req.session.visitCounted) {
+    req.session.visitCounted = true;
+    res.locals.visitCount = incrementVisitCount();
+  }
+  next();
+});
+
 function getAiConfig() {
   try {
     const raw = fs.readFileSync(aiConfigPath, "utf-8");
