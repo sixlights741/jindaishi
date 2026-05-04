@@ -52,18 +52,41 @@
 
     <aside class="panel list-panel">
       <h2>地点列表</h2>
-      <ul class="place-list">
-        <% places.forEach((place, idx) => { %>
-          <li class="stagger-item stagger-<%= (idx % 8) + 1 %>">
-            <a href="/place/<%= place.id %>">
-              <strong><%= place.name %></strong>
-              <span><%= place.summary %></span>
-            </a>
-          </li>
-        <% }) %>
-      </ul>
+      <div class="card-stack-wrapper" id="cardStackWrapper">
+        <!-- 堆叠预览层（点击弹出浮层） -->
+        <div class="stack-preview" id="stackPreview">
+          <div class="preview-card preview-card-3"></div>
+          <div class="preview-card preview-card-2"></div>
+          <div class="preview-card preview-card-1">
+            <div class="preview-inner">
+              <span class="preview-icon">📜</span>
+              <span class="preview-text">点击展开地点</span>
+              <span class="preview-arrow">▼</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </aside>
   </main>
+
+  <!-- ===== 全屏地点浮层 ===== -->
+  <div class="places-overlay" id="placesOverlay">
+    <div class="places-backdrop" id="placesBackdrop"></div>
+    <div class="places-sheet" id="placesSheet">
+      <div class="places-header">
+        <h2>📍 探索历史地点</h2>
+        <button class="places-close" id="placesClose" aria-label="关闭">✕</button>
+      </div>
+      <div class="places-grid" id="placesGrid">
+        <% places.forEach((place, idx) => { %>
+          <a href="/place/<%= place.id %>" class="pop-card" style="--i: <%= idx %>;" data-index="<%= idx %>">
+            <strong><%= place.name %></strong>
+            <span><%= place.summary %></span>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  </div>
 
   <script id="places-data" type="application/json"><%- JSON.stringify(places) %></script>
   <script>
@@ -88,6 +111,53 @@
         marker.style.top = topPct + "%";
         marker.innerHTML = '<span class="map-marker-dot"></span><span class="map-marker-label">' + place.name + '</span>';
         markersEl.appendChild(marker);
+      });
+    })();
+  </script>
+
+  <script>
+    // ===== 全屏浮层：点击堆叠预览 → 弹出地点选择 =====
+    (function() {
+      var preview = document.getElementById("stackPreview");
+      var overlay = document.getElementById("placesOverlay");
+      var backdrop = document.getElementById("placesBackdrop");
+      var closeBtn = document.getElementById("placesClose");
+      var sheet = document.getElementById("placesSheet");
+      var cards = document.querySelectorAll("#placesGrid .pop-card");
+
+      if (!preview || !overlay) return;
+
+      function openOverlay() {
+        overlay.classList.add("active");
+        document.body.style.overflow = "hidden";
+        // 卡片依次弹出
+        cards.forEach(function(card, i) {
+          card.style.animationDelay = (i * 0.05) + "s";
+          card.classList.add("popping");
+        });
+      }
+
+      function closeOverlay() {
+        overlay.classList.remove("active");
+        document.body.style.overflow = "";
+        cards.forEach(function(card) {
+          card.classList.remove("popping");
+          card.style.animationDelay = "0s";
+        });
+      }
+
+      preview.addEventListener("click", function(e) {
+        e.preventDefault();
+        openOverlay();
+      });
+
+      closeBtn.addEventListener("click", closeOverlay);
+      backdrop.addEventListener("click", closeOverlay);
+
+      document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && overlay.classList.contains("active")) {
+          closeOverlay();
+        }
       });
     })();
   </script>
