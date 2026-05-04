@@ -824,11 +824,13 @@ button:hover::after,
   display: block;
   font-size: 24px;
   font-weight: 800;
-  background: linear-gradient(135deg, #7cc4ff, #c084fc);
+  background: linear-gradient(135deg, #ffffff, #b8d8ff, #c8a8ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.25));
+  filter:
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.7))
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 .stat-label {
   display: block;
@@ -1311,7 +1313,15 @@ button:hover::after,
   }
 
   #map {
-    height: 56vh;
+    max-height: 70vh;
+    overflow: hidden;
+  }
+
+  .map-base-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
   }
 
   .brand-emblem {
