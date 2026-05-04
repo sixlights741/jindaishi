@@ -266,8 +266,8 @@ function normalizePlaceFromBody(body) {
   return {
     id: (body.id || "").trim(),
     name: (body.name || "").trim(),
-    lat: Number(body.lat),
-    lng: Number(body.lng),
+    px: Math.round(Number(body.px)),
+    py: Math.round(Number(body.py)),
     period: (body.period || "").trim(),
     summary: (body.summary || "").trim(),
     content: (body.content || "").trim(),
@@ -285,8 +285,8 @@ function validatePlace(place, isCreate) {
   if (!place.name || !place.period || !place.summary || !place.content || !place.image) {
     return "请完整填写地点信息";
   }
-  if (Number.isNaN(place.lat) || Number.isNaN(place.lng)) {
-    return "经纬度必须是数字";
+  if (Number.isNaN(place.px) || Number.isNaN(place.py)) {
+    return "坐标必须是数字，请在底图上点击选点";
   }
   return null;
 }
@@ -687,8 +687,8 @@ app.get("/admin/place/new", requireAuth, requireAdmin, (req, res) => {
     place: {
       id: "",
       name: "",
-      lat: "",
-      lng: "",
+      px: "",
+      py: "",
       period: "",
       summary: "",
       content: "",

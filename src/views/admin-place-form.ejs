@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><%= mode === 'create' ? '新增地点' : '编辑地点' %> - 管理员后台</title>
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/leaflet.css" crossorigin="" />
 </head>
 <body class="auth-body">
   <main class="auth-card admin-form-card">
@@ -24,11 +25,13 @@
       <label>名称</label>
       <input type="text" name="name" value="<%= place.name %>" required />
 
-      <label>纬度 lat</label>
-      <input type="text" name="lat" value="<%= place.lat %>" required />
-
-      <label>经度 lng</label>
-      <input type="text" name="lng" value="<%= place.lng %>" required />
+      <label>地图选点（点击底图设定位置）</label>
+      <div id="pickerMap" style="width:100%;height:300px;border-radius:10px;overflow:hidden;margin-bottom:4px;border:1px solid #31427a;cursor:crosshair;"></div>
+      <div style="display:flex;gap:10px;">
+        <input type="text" name="px" id="pxInput" value="<%= place.px || place.px === 0 ? place.px : '' %>" placeholder="像素 X" required readonly style="flex:1;" />
+        <input type="text" name="py" id="pyInput" value="<%= place.py || place.py === 0 ? place.py : '' %>" placeholder="像素 Y" required readonly style="flex:1;" />
+      </div>
+      <p class="subtitle">点击上方底图自动填入坐标（X：水平位置，Y：垂直位置）</p>
 
       <label>历史时期</label>
       <input type="text" name="period" value="<%= place.period %>" required />
@@ -94,6 +97,50 @@
       <a href="/admin" class="back-link">返回管理员后台</a>
     </form>
   </main>
+
+  <script src="/leaflet.js" crossorigin=""></script>
+  <script>
+    (function() {
+      var pickerEl = document.getElementById("pickerMap");
+      var pxInput = document.getElementById("pxInput");
+      var pyInput = document.getElementById("pyInput");
+      if (!pickerEl || !pxInput || !pyInput) return;
+
+      var imgW = 1728, imgH = 2368;
+      var pickerMap = L.map(pickerEl, {
+        crs: L.CRS.Simple,
+        zoomControl: false,
+        attributionControl: false,
+        minZoom: -3,
+        maxZoom: 1,
+        maxBounds: [[0, 0], [imgH, imgW]],
+        maxBoundsViscosity: 1.0,
+      });
+
+      L.imageOverlay("/images/map_pic.jpg", [[0, 0], [imgH, imgW]]).addTo(pickerMap);
+      pickerMap.fitBounds([[0, 0], [imgH, imgW]]);
+
+      var marker = null;
+      // 编辑时恢复已有标记
+      var initPx = parseInt(pxInput.value) || -1;
+      var initPy = parseInt(pyInput.value) || -1;
+      if (initPx >= 0 && initPy >= 0) {
+        marker = L.marker([initPy, initPx]).addTo(pickerMap);
+        pickerMap.setView([initPy, initPx], 0);
+      }
+
+      pickerMap.on("click", function(e) {
+        var py = Math.round(e.latlng.lat);
+        var px = Math.round(e.latlng.lng);
+        if (px < 0 || px > imgW || py < 0 || py > imgH) return;
+        pxInput.value = px;
+        pyInput.value = py;
+        if (marker) pickerMap.removeLayer(marker);
+        marker = L.marker([py, px]).addTo(pickerMap);
+      });
+    })();
+  </script>
+
   <script>
     (function () {
       const imageInput = document.getElementById("imageInput");
