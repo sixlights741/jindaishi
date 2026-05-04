@@ -133,6 +133,15 @@ function saveAiConfig(payload) {
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
+// HTTP → HTTPS 重定向（适用于 nginx / 反向代理之后）
+app.use((req, res, next) => {
+  const proto = req.headers["x-forwarded-proto"];
+  if (proto && proto !== "https") {
+    return res.redirect(301, "https://" + req.headers.host + req.originalUrl);
+  }
+  next();
+});
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
