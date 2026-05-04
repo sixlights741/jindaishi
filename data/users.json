@@ -1,12 +1,13 @@
 [
   {
-    "studentId": "20230001",
-    "passwordHash": "$2a$10$9dsp8tKYYd9OyDkKxQdyte4qlvTlVptQSSyDCXVbI7Sdp.DIjjm.y",
-    "mustChangePassword": false
+    "studentId": "1",
+    "passwordHash": "$2b$10$wP.pvDRQVJRnrgajnpJ8wuivB5s3i3UEH9QS3wxQ418b.8wKfmJEK",
+    "mustChangePassword": false,
+    "isAdmin": true
   },
   {
-    "studentId": "20230002",
-    "passwordHash": "$2a$10$i/Mw.WEi6ikbmzlinRX0XO1Tt89eqdOgOeDAy/w4egsHfHqJi5Diu",
+    "studentId": "2",
+    "passwordHash": "$2b$10$SH1JSeeTmvZZLaaKmv..x.k5MwiHarJJ0tE4HzbzFoIRVpO71yDjm",
     "mustChangePassword": false
   },
   {
