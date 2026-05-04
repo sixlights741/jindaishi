@@ -168,6 +168,19 @@ body::after {
   text-align: center;
 }
 
+.auth-body .auth-card h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.55),
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    0 0 32px rgba(0, 0, 0, 0.3);
+  letter-spacing: 2px;
+  margin-bottom: 18px;
+}
+}
+
 .auth-body .auth-card .form {
   text-align: left;
 }
@@ -446,11 +459,12 @@ button:hover::after,
 .stat-number {
   display: block;
   font-size: 24px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #58a6ff, #9d4edd);
+  font-weight: 800;
+  background: linear-gradient(135deg, #7cc4ff, #c084fc);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.25));
 }
 .stat-label {
   display: block;
