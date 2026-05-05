@@ -132,6 +132,7 @@ function saveAiConfig(payload) {
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+app.set("view cache", false);
 
 // HTTP → HTTPS 重定向（适用于 nginx / 反向代理之后）
 app.use((req, res, next) => {

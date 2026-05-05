@@ -6,97 +6,133 @@
   <title><%= mode === 'create' ? '新增地点' : '编辑地点' %> - 管理员后台</title>
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/leaflet.css" crossorigin="" />
+  <style>
+    /* 将编辑界面强制修改为极简黑色表单，去除所有动画与重叠 */
+    body {
+      background: #000 !important;
+      margin: 0; padding: 20px; color: #fff; font-family: sans-serif;
+    }
+    body::before, body::after, #particles-canvas, .background-glow {
+      display: none !important;
+    }
+    .wrapper {
+      max-width: 800px; margin: 0 auto; background: #111; padding: 30px; border-radius: 10px;
+    }
+    .wrapper h1 { margin-top: 0; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #ccc; }
+    .form-group input[type="text"], .form-group textarea {
+      width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box;
+    }
+    .hint { font-size: 12px; color: #888; margin-top: 5px; margin-bottom: 0; }
+    
+    .preview-box {
+      border: 1px solid #444; background: #1a1a1a; padding: 15px; border-radius: 6px; margin-top: 10px;
+    }
+    .preview-box iframe { width: 100%; height: 350px; border: none; background: #000; display: block; }
+    .preview-box img { max-width: 100%; max-height: 400px; display: block; border-radius: 4px; object-fit: contain; }
+    .drawings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .drawings-grid img { width: 100%; height: 120px; object-fit: cover; }
+    
+    button[type="submit"] {
+      background: #007bff; color: #fff; padding: 12px 20px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; width: 100%; margin-top: 20px;
+    }
+    button[type="submit"]:hover { background: #0056b3; }
+    .back-link { display: block; text-align: center; margin-top: 15px; color: #888; text-decoration: none; }
+    .back-link:hover { color: #fff; }
+    .btn-danger { background: #dc3545; color: #fff; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 10px; }
+  </style>
 </head>
-<body class="auth-body">
-  <main class="auth-card admin-form-card">
+<body>
+  <div class="wrapper">
     <h1><%= mode === 'create' ? '新增地点' : '编辑地点' %></h1>
-  <p class="subtitle">支持主图与多张手绘图，均可直接从本地上传。</p>
+    <% if (error) { %><p style="color: #dc3545;"><%= error %></p><% } %>
+    <div id="adminNotice" style="display:none; padding:10px; margin-bottom:15px; border-radius:4px;"></div>
 
-    <div id="adminNotice" class="notice" style="display:none; margin-top: 10px;"></div>
-
-    <% if (error) { %>
-      <p class="error"><%= error %></p>
-    <% } %>
-
-  <form method="post" action="<%= mode === 'create' ? '/admin/place/new' : '/admin/place/' + place.id + '/edit' %>" class="form" enctype="multipart/form-data">
-      <label>地点 ID（英文/数字/短横线）</label>
-      <input type="text" name="id" value="<%= place.id %>" <%= mode === 'edit' ? 'readonly' : 'required' %> />
-
-      <label>名称</label>
-      <input type="text" name="name" value="<%= place.name %>" required />
-
-      <label>地图选点（点击底图设定位置）</label>
-      <div id="pickerMap" style="width:100%;height:300px;border-radius:10px;overflow:hidden;margin-bottom:4px;border:1px solid #31427a;cursor:crosshair;"></div>
-      <div style="display:flex;gap:10px;">
-        <input type="text" name="px" id="pxInput" value="<%= place.px || place.px === 0 ? place.px : '' %>" placeholder="像素 X" required readonly style="flex:1;" />
-        <input type="text" name="py" id="pyInput" value="<%= place.py || place.py === 0 ? place.py : '' %>" placeholder="像素 Y" required readonly style="flex:1;" />
+    <form method="post" action="<%= mode === 'create' ? '/admin/place/new' : '/admin/place/' + place.id + '/edit' %>" enctype="multipart/form-data">
+      <% if (mode === 'create') { %>
+      <div class="form-group">
+        <label>地点 ID（字母/数字）</label>
+        <input type="text" name="id" value="<%= place.id %>" required />
       </div>
-      <p class="subtitle">点击上方底图自动填入坐标（X：水平位置，Y：垂直位置）</p>
+      <% } %>
 
-      <label>历史时期</label>
-      <input type="text" name="period" value="<%= place.period %>" required />
+      <div class="form-group">
+        <label>名称</label>
+        <input type="text" name="name" value="<%= place.name %>" required />
+      </div>
 
-      <label>摘要</label>
-      <textarea name="summary" rows="2" required><%= place.summary %></textarea>
-
-      <label>详细介绍</label>
-      <textarea name="content" rows="5" required><%= place.content %></textarea>
-
-  <label>主图上传（必填）</label>
-  <input type="file" name="imageFile" id="imageFileInput" accept="image/*" />
-  <p class="subtitle">若编辑时不上传，则保留当前主图。</p>
-  <input type="hidden" name="image" id="imageInput" value="<%= place.image %>" />
-
-  <label>B 站视频链接（可选，BV/AV 或 player 链接）</label>
-  <input type="text" name="videoUrl" value="<%= place.videoUrl || '' %>" placeholder="https://www.bilibili.com/video/BV..." />
-
-      <section class="preview-panel" aria-live="polite">
-        <h2>视频预览</h2>
-        <p class="subtitle">支持 BV/AV 或 player 链接，填写后自动预览。</p>
-        <div class="preview-card">
-          <div id="videoPreview" class="video-embed video-preview">
-            <iframe id="videoPreviewFrame" src="" allowfullscreen loading="lazy" referrerpolicy="no-referrer"></iframe>
-          </div>
-          <p id="videoPreviewHint" class="preview-hint">请输入 B 站视频链接以查看预览</p>
+      <div class="form-group">
+        <label>地图选点 (X / Y)</label>
+        <div id="pickerMap" style="width:100%; height:300px; border-radius:6px; margin-bottom:10px; z-index:1;"></div>
+        <div style="display:flex; gap:10px;">
+          <input type="text" name="px" id="pxInput" value="<%= place.px || place.px === 0 ? place.px : '' %>" placeholder="X" required readonly style="flex:1;" />
+          <input type="text" name="py" id="pyInput" value="<%= place.py || place.py === 0 ? place.py : '' %>" placeholder="Y" required readonly style="flex:1;" />
         </div>
-      </section>
+      </div>
 
-      <section class="preview-panel" aria-live="polite">
-        <h2>主图预览</h2>
-        <div class="preview-card">
-          <div style="display:flex;align-items:flex-start;gap:8px;">
-            <img id="mainImagePreview" class="preview-main-image" src="" alt="主图预览" />
-            <div>
-              <p id="mainImageHint" class="preview-hint">请输入主图 URL 以查看预览</p>
-              <button type="button" id="deleteMainImageBtn" style="display:none;margin-top:8px;">删除主图</button>
-            </div>
+      <div class="form-group">
+        <label>历史时期</label>
+        <input type="text" name="period" value="<%= place.period %>" required />
+      </div>
+
+      <div class="form-group">
+        <label>摘要</label>
+        <textarea name="summary" rows="2" required><%= place.summary %></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>详细介绍</label>
+        <textarea name="content" rows="6" required><%= place.content %></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>主图上传</label>
+        <input type="file" name="imageFile" id="imageFileInput" accept="image/*" style="color:#fff;" />
+        <p class="hint">编辑时不选择则保留原图</p>
+        <input type="hidden" name="image" id="imageInput" value="<%= place.image %>" />
+        <div class="preview-box">
+          <p class="hint" id="mainImageHint" style="margin-top:0;">主图预览区域</p>
+          <img id="mainImagePreview" src="" alt="主图预览" style="display:none;" />
+          <button type="button" id="deleteMainImageBtn" class="btn-danger" style="display:none;">删除主图</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>B站视频链接 (BV/AV号)</label>
+        <input type="text" name="videoUrl" value="<%= place.videoUrl || '' %>" placeholder="例如: BV1xxxx..." />
+        <div class="preview-box">
+          <p class="hint" id="videoPreviewHint" style="margin-top:0;">视频预览区域</p>
+          <div id="videoPreview" style="display:none;">
+            <iframe id="videoPreviewFrame" src="" allowfullscreen></iframe>
           </div>
         </div>
-      </section>
+      </div>
 
-  <label>手绘图上传（可多选）</label>
-  <input type="file" name="drawingFiles" id="drawingFilesInput" accept="image/*" multiple />
-  <p class="subtitle">上传的图片将自动追加到手绘图列表中。</p>
+      <div class="form-group">
+        <label>手绘图上传 (可多选)</label>
+        <input type="file" name="drawingFiles" id="drawingFilesInput" accept="image/*" multiple style="color:#fff;" />
+        <input type="hidden" name="drawingsText" id="drawingsTextInput" value="<%= place.drawingsText || '' %>" />
+        <div class="preview-box">
+          <p class="hint" id="drawingsEmptyHint" style="margin-top:0;">手绘图预览区域</p>
+          <div id="drawingsPreviewGrid" class="drawings-grid"></div>
+        </div>
+      </div>
 
-  <label>上传手绘图说明（可选，每行对应一张上传图）</label>
-  <textarea name="drawingsCaptions" id="drawingsCaptionsInput" rows="3" placeholder="第一张说明\n第二张说明"><%= place.drawingsCaptions || '' %></textarea>
+      <div class="form-group">
+        <label>手绘图说明 (可选，按段落对应如需要)</label>
+        <textarea name="drawingsCaptions" id="drawingsCaptionsInput" rows="3" placeholder="按行说明..."><%= place.drawingsCaptions || '' %></textarea>
+      </div>
 
-  <input type="hidden" name="drawingsText" id="drawingsTextInput" value="<%= place.drawingsText || '' %>" />
+      <div class="form-group">
+        <label>小助手预设问答</label>
+        <textarea name="qaRulesText" rows="5" placeholder="问 | 答"><%= place.qaRulesText || '' %></textarea>
+      </div>
 
-      <section class="preview-panel" aria-live="polite">
-        <h2>手绘图预览</h2>
-        <p class="subtitle">每行格式：图片路径 | 说明（说明可选）</p>
-        <div id="drawingsPreviewGrid" class="preview-grid"></div>
-        <p id="drawingsEmptyHint" class="preview-hint">请输入手绘图列表以查看预览</p>
-      </section>
-
-      <label>小助手预设问答（每行：问题 | 回答）</label>
-      <textarea name="qaRulesText" rows="7" placeholder="这个地点最重要的历史意义是什么？ | 它见证了......"><%= place.qaRulesText || '' %></textarea>
-
-      <button type="submit"><%= mode === 'create' ? '创建地点' : '保存修改' %></button>
-      <a href="/admin" class="back-link">返回管理员后台</a>
+      <button type="submit"><%= mode === 'create' ? '保存地点' : '保存修改' %></button>
+      <a href="/admin" class="back-link">放弃并返回后台</a>
     </form>
-  </main>
+  </div>
 
   <script src="/leaflet.js" crossorigin=""></script>
   <script>
@@ -106,7 +142,7 @@
       var pyInput = document.getElementById("pyInput");
       if (!pickerEl || !pxInput || !pyInput) return;
 
-      var imgW = 1728, imgH = 2368;
+      var imgW = 2988, imgH = 4096;
       var pickerMap = L.map(pickerEl, {
         crs: L.CRS.Simple,
         zoomControl: false,
@@ -143,6 +179,7 @@
 
   <script>
     (function () {
+      const currentPlaceId = "<%= place.id || '' %>";
       const imageInput = document.getElementById("imageInput");
       const mainImagePreview = document.getElementById("mainImagePreview");
       const mainImageHint = document.getElementById("mainImageHint");
@@ -211,15 +248,20 @@
         drawingsEmptyHint.style.display = "none";
 
         [...uploadedItems, ...items].forEach((item, index) => {
-          const card = document.createElement("article");
-          card.className = "preview-grid-item";
+          const card = document.createElement("div");
+          card.style.background = "#222";
+          card.style.padding = "5px";
+          card.style.borderRadius = "4px";
 
           const img = document.createElement("img");
           img.src = item.url;
           img.alt = item.caption || `手绘图预览 ${index + 1}`;
 
           const caption = document.createElement("p");
-          caption.textContent = item.caption || `第 ${index + 1} 张（未填写说明）`;
+          caption.style.fontSize = "12px";
+          caption.style.color = "#ccc";
+          caption.style.margin = "5px 0";
+          caption.textContent = item.caption || `第 ${index + 1} 张`;
 
           card.appendChild(img);
           card.appendChild(caption);
@@ -229,11 +271,12 @@
             const del = document.createElement('button');
             del.type = 'button';
             del.textContent = '删除';
-            del.style.marginTop = '6px';
+            del.className = 'btn-danger';
+            del.style.width = '100%';
             del.addEventListener('click', async () => {
               if (!confirm('确认删除该手绘图？此操作会从服务器删除文件且不可恢复。')) return;
               try {
-                const res = await fetch(`/admin/place/${encodeURIComponent((document.querySelector("input[name='id']").value||'').trim())}/image/delete`, {
+                const res = await fetch(`/admin/place/${encodeURIComponent(currentPlaceId)}/image/delete`, {
                   method: 'POST',
                   headers: {'Content-Type': 'application/json'},
                   body: JSON.stringify({ type: 'drawing', url: item.url })
@@ -323,10 +366,9 @@
       if (deleteMainImageBtn) {
         deleteMainImageBtn.addEventListener('click', async () => {
           if (!confirm('确认删除主图？此操作会从服务器删除文件且不可恢复。')) return;
-          const placeId = (document.querySelector("input[name='id']").value || '').trim();
           const url = (imageInput.value || '').trim();
           try {
-            const res = await fetch(`/admin/place/${encodeURIComponent(placeId)}/image/delete`, {
+            const res = await fetch(`/admin/place/${encodeURIComponent(currentPlaceId)}/image/delete`, {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
               body: JSON.stringify({ type: 'main', url })

@@ -93,6 +93,16 @@ body::after {
   background: transparent;
 }
 
+/* ===== 管理员编辑/新增地点 纯色背景，不显示背景图 ===== */
+.admin-form-body {
+  background: #f5f0e1 !important;
+}
+
+.admin-form-body::before,
+.admin-form-body::after {
+  display: none !important;
+}
+
 .background-glow {
   position: fixed;
   width: 600px;
@@ -178,7 +188,6 @@ body::after {
     0 0 32px rgba(0, 0, 0, 0.3);
   letter-spacing: 2px;
   margin-bottom: 18px;
-}
 }
 
 .auth-body .auth-card .form {
@@ -397,22 +406,112 @@ button:hover::after,
 }
 
 #map {
-  border-radius: 14px;
-  overflow: hidden;
   margin-top: 10px;
+  position: relative;
+  overflow: visible !important;
+}
+
+/* ===== 圆形旋转地图按钮（fixed 定位，始终在最顶层） ===== */
+#mapRotateBtn {
+  position: fixed;
+  z-index: 2147483647;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 180, 60, 0.85);
+  background: rgba(20, 16, 8, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffb74d;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  letter-spacing: normal;
+  font-weight: normal;
+  font-size: inherit;
+  font-family: inherit;
+  line-height: 1;
+  pointer-events: auto;
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 16px rgba(255, 152, 0, 0.3),
+    0 0 36px rgba(255, 152, 0, 0.1);
+  transition: all 0.28s ease;
+  animation: rotateBtnGlow 2.2s ease-in-out infinite;
+}
+
+/* 光晕呼吸动画 —— 让按钮容易被发现 */
+@keyframes rotateBtnGlow {
+  0%, 100% {
+    box-shadow:
+      0 4px 18px rgba(0, 0, 0, 0.45),
+      0 0 16px rgba(255, 152, 0, 0.3),
+      0 0 36px rgba(255, 152, 0, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 4px 22px rgba(0, 0, 0, 0.5),
+      0 0 24px rgba(255, 152, 0, 0.5),
+      0 0 48px rgba(255, 152, 0, 0.2);
+  }
+}
+
+/* 干掉全局 button::after 的扫光伪元素 */
+#mapRotateBtn::after,
+#mapRotateBtn::before {
+  display: none !important;
+  content: none !important;
+}
+
+#mapRotateBtn:hover {
+  background: rgba(255, 152, 0, 0.2);
+  border-color: rgba(255, 180, 60, 0.95);
+  color: #ffffff;
+  box-shadow:
+    0 6px 26px rgba(0, 0, 0, 0.5),
+    0 0 28px rgba(255, 152, 0, 0.55),
+    0 0 52px rgba(255, 152, 0, 0.25);
+  transform: scale(1.1);
+  animation: none;
+}
+
+#mapRotateBtn:active {
+  transform: scale(0.9);
+  transition: transform 0.1s ease;
+}
+
+#mapRotateBtn svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  filter: drop-shadow(0 0 4px rgba(255, 152, 0, 0.5));
+}
+
+/* 点击时图标旋转动画 */
+#mapRotateBtn.spinning svg {
+  transform: rotate(90deg);
 }
 
 .map-img-wrap {
   position: relative;
   width: 100%;
+  height: 100%;
   line-height: 0;
 }
 
 .map-base-img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
-  border-radius: 14px;
+  object-fit: contain;
 }
 
 .map-markers {
@@ -646,7 +745,7 @@ button:hover::after,
 }
 
 /* 预览层里的三张假卡片（模拟堆叠） */
-.preview-card {
+.stack-preview .preview-card {
   position: absolute;
   left: 6px;
   right: 6px;
@@ -660,21 +759,21 @@ button:hover::after,
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.preview-card-3 {
+.stack-preview .preview-card-3 {
   top: 0;
   z-index: 1;
   transform: translateY(10px) rotate(-1.5deg) scale(0.92);
   opacity: 0.6;
 }
 
-.preview-card-2 {
+.stack-preview .preview-card-2 {
   top: 0;
   z-index: 2;
   transform: translateY(5px) rotate(1deg) scale(0.96);
   opacity: 0.8;
 }
 
-.preview-card-1 {
+.stack-preview .preview-card-1 {
   top: 0;
   z-index: 3;
   transform: translateY(0) rotate(0) scale(1);
@@ -1028,7 +1127,8 @@ button:hover::after,
 .video-embed {
   position: relative;
   width: 100%;
-  padding-top: 56.25%;
+  aspect-ratio: 16 / 9;
+  padding-top: 0;
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(230, 238, 255, 0.32);
@@ -1163,6 +1263,8 @@ button:hover::after,
 
 .admin-form-card {
   width: min(720px, 95vw);
+  overflow: visible;
+  max-height: none;
 }
 
 .provider-indicator {
@@ -1227,8 +1329,12 @@ button:hover::after,
 }
 
 .preview-panel {
-  margin-top: 8px;
-  margin-bottom: 6px;
+  display: block;
+  clear: both;
+  margin-top: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  width: 100%;
 }
 
 .preview-panel h2 {
@@ -1243,11 +1349,17 @@ button:hover::after,
   -webkit-backdrop-filter: blur(10px) saturate(1.1);
   border-radius: 12px;
   padding: 10px;
+  height: auto;
+  position: static;
 }
 
 .video-preview {
   display: none;
   margin-bottom: 8px;
+}
+
+.admin-form-card .video-embed {
+  display: none;
 }
 
 .preview-main-image {

@@ -5,34 +5,159 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>管理员后台 - 东北大学校史地图</title>
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    body {
+      background: #000 !important;
+      margin: 0;
+      padding: 20px;
+      color: #fff;
+      font-family: sans-serif;
+    }
+
+    body::before,
+    body::after,
+    #particles-canvas,
+    .background-glow {
+      display: none !important;
+    }
+
+    .wrapper {
+      max-width: 1180px;
+      margin: 0 auto;
+      background: #111;
+      padding: 28px;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
+
+    .wrapper h1,
+    .wrapper h2 {
+      margin-top: 0;
+    }
+
+    .subtitle {
+      margin-top: 0;
+      color: #aaa;
+      line-height: 1.6;
+    }
+
+    .topbar {
+      margin-bottom: 18px;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .topbar p {
+      color: #bdbdbd;
+      margin-bottom: 0;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn,
+    .btn.ghost,
+    .actions button,
+    .admin-actions .btn {
+      border-radius: 6px;
+    }
+
+    .detail-container {
+      padding: 0;
+    }
+
+    .detail-card {
+      background: #171717;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: none;
+    }
+
+    .admin-table-wrap {
+      width: 100%;
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      background: #111;
+    }
+
+    .admin-table th,
+    .admin-table td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 10px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .admin-table th {
+      color: #fff;
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .admin-table tbody tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .admin-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .admin-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .site-footer {
+      background: #111;
+      border-top: 1px solid #222;
+      margin-top: 18px;
+    }
+  </style>
 </head>
 <body>
-  <header class="topbar">
-    <div>
-      <h1>管理员后台</h1>
-      <p>账号：<%= user.studentId %></p>
-    </div>
-    <div class="actions">
-      <a href="/admin/place/new" class="btn">新增地点</a>
-      <a href="/admin/ai-settings" class="btn ghost">AI 配置</a>
-      <a href="/" class="btn ghost">返回地图</a>
-      <form method="post" action="/logout">
-        <button type="submit" class="btn">退出登录</button>
-      </form>
-    </div>
-  </header>
+  <div class="wrapper">
+    <header class="topbar">
+      <div>
+        <h1>管理员后台</h1>
+        <p>账号：<%= user.studentId %></p>
+      </div>
+      <div class="actions">
+        <a href="/admin/place/new" class="btn">新增地点</a>
+        <a href="/admin/ai-settings" class="btn ghost">AI 配置</a>
+        <a href="/" class="btn ghost">返回地图</a>
+        <form method="post" action="/logout">
+          <button type="submit" class="btn">退出登录</button>
+        </form>
+      </div>
+    </header>
 
-  <main class="detail-container">
-    <section class="detail-card admin-table-wrap">
+    <main class="detail-container">
+      <section class="detail-card admin-table-wrap">
       <h2>地点管理</h2>
       <p class="subtitle">可在这里新增、编辑、删除地点信息与手绘图路径。</p>
 
       <table class="admin-table">
         <thead>
           <tr>
-            <th>ID</th>
             <th>名称</th>
-            <th>时期</th>
             <th>手绘图数量</th>
             <th>操作</th>
           </tr>
@@ -40,9 +165,7 @@
         <tbody>
           <% places.forEach((place) => { %>
             <tr>
-              <td><code><%= place.id %></code></td>
               <td><%= place.name %></td>
-              <td><%= place.period %></td>
               <td><%= Array.isArray(place.drawings) ? place.drawings.length : 0 %></td>
               <td>
                 <div class="admin-actions">
@@ -57,7 +180,9 @@
           <% }) %>
         </tbody>
       </table>
-  </main>
+      </section>
+    </main>
+  </div>
 
   <footer class="site-footer">
     <p>&copy; 2026 东北大学校史地图 &middot; 管理后台</p>
