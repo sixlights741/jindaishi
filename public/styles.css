@@ -411,95 +411,6 @@ button:hover::after,
   overflow: visible !important;
 }
 
-/* ===== 圆形旋转地图按钮（fixed 定位，始终在最顶层） ===== */
-#mapRotateBtn {
-  position: fixed;
-  z-index: 2147483647;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 180, 60, 0.85);
-  background: rgba(20, 16, 8, 0.92);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  color: #ffb74d;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  margin: 0;
-  overflow: visible;
-  letter-spacing: normal;
-  font-weight: normal;
-  font-size: inherit;
-  font-family: inherit;
-  line-height: 1;
-  pointer-events: auto;
-  box-shadow:
-    0 4px 18px rgba(0, 0, 0, 0.45),
-    0 0 16px rgba(255, 152, 0, 0.3),
-    0 0 36px rgba(255, 152, 0, 0.1);
-  transition: all 0.28s ease;
-  animation: rotateBtnGlow 2.2s ease-in-out infinite;
-}
-
-/* 光晕呼吸动画 —— 让按钮容易被发现 */
-@keyframes rotateBtnGlow {
-  0%, 100% {
-    box-shadow:
-      0 4px 18px rgba(0, 0, 0, 0.45),
-      0 0 16px rgba(255, 152, 0, 0.3),
-      0 0 36px rgba(255, 152, 0, 0.1);
-  }
-  50% {
-    box-shadow:
-      0 4px 22px rgba(0, 0, 0, 0.5),
-      0 0 24px rgba(255, 152, 0, 0.5),
-      0 0 48px rgba(255, 152, 0, 0.2);
-  }
-}
-
-/* 干掉全局 button::after 的扫光伪元素 */
-#mapRotateBtn::after,
-#mapRotateBtn::before {
-  display: none !important;
-  content: none !important;
-}
-
-#mapRotateBtn:hover {
-  background: rgba(255, 152, 0, 0.2);
-  border-color: rgba(255, 180, 60, 0.95);
-  color: #ffffff;
-  box-shadow:
-    0 6px 26px rgba(0, 0, 0, 0.5),
-    0 0 28px rgba(255, 152, 0, 0.55),
-    0 0 52px rgba(255, 152, 0, 0.25);
-  transform: scale(1.1);
-  animation: none;
-}
-
-#mapRotateBtn:active {
-  transform: scale(0.9);
-  transition: transform 0.1s ease;
-}
-
-#mapRotateBtn svg {
-  display: block;
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  filter: drop-shadow(0 0 4px rgba(255, 152, 0, 0.5));
-}
-
-/* 点击时图标旋转动画 */
-#mapRotateBtn.spinning svg {
-  transform: rotate(90deg);
-}
-
 .map-img-wrap {
   position: relative;
   width: 100%;
@@ -1735,6 +1646,189 @@ button:hover::after,
   }
   .visit-badge .visit-count {
     font-size: 13px;
+  }
+}
+
+/* ===== AI 思考中小机器人 ===== */
+.robot-thinking {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+
+.robot-body {
+  position: relative;
+  width: 44px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+/* 头部 */
+.robot-head {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #3a4f8a, #1e2a52);
+  border: 2px solid rgba(124, 170, 255, 0.55);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,0.1),
+    0 4px 12px rgba(0,0,0,0.3);
+  animation: robotNod 2.6s ease-in-out infinite;
+}
+
+/* 天线 */
+.robot-antenna {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 10px;
+  background: rgba(124, 170, 255, 0.6);
+  border-radius: 1px;
+}
+
+.robot-antenna::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #58a6ff;
+  box-shadow: 0 0 8px rgba(88, 166, 255, 0.8), 0 0 16px rgba(88, 166, 255, 0.4);
+  animation: antennaGlow 1.4s ease-in-out infinite;
+}
+
+/* 眼睛 */
+.robot-eyes {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.robot-eye {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7cc2ff;
+  box-shadow: 0 0 6px rgba(124, 194, 255, 0.7), 0 0 12px rgba(124, 194, 255, 0.3);
+  animation: robotBlink 3s ease-in-out infinite;
+}
+
+.robot-eye:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+/* 嘴 — 扫描线 */
+.robot-mouth {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(124, 194, 255, 0.5);
+  overflow: hidden;
+}
+
+.robot-mouth::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: #7cc2ff;
+  animation: scanMouth 1.2s ease-in-out infinite;
+}
+
+/* 思考文字 */
+.robot-text {
+  font-size: 13px;
+  color: rgba(170, 202, 255, 0.85);
+  letter-spacing: 0.5px;
+  animation: thinkFade 2.6s ease-in-out infinite;
+}
+
+/* 思考气泡 */
+.robot-thoughts {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+}
+
+.robot-thought-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(124, 194, 255, 0.6);
+  animation: thoughtFloat 1.6s ease-in-out infinite;
+}
+
+.robot-thought-dot:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.robot-thought-dot:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+/* ===== 机器人动画关键帧 ===== */
+@keyframes robotNod {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  30% { transform: translateX(-50%) translateY(-2px); }
+  60% { transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes robotBlink {
+  0%, 90%, 96%, 100% { transform: scaleY(1); }
+  93% { transform: scaleY(0.1); }
+}
+
+@keyframes antennaGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(88, 166, 255, 0.8), 0 0 16px rgba(88, 166, 255, 0.4);
+    background: #58a6ff;
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(88, 166, 255, 1), 0 0 24px rgba(88, 166, 255, 0.6);
+    background: #9dd4ff;
+  }
+}
+
+@keyframes scanMouth {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
+}
+
+@keyframes thinkFade {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes thoughtFloat {
+  0%, 100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-6px);
   }
 }
 

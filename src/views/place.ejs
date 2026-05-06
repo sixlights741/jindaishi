@@ -184,6 +184,20 @@
         saveHistory();
       }
 
+      function addTypingIndicator() {
+        var typing = document.createElement("article");
+        typing.className = "assistant-bubble assistant-bubble-bot robot-thinking";
+        typing.id = "typingIndicator";
+        typing.innerHTML = '<div class="robot-body"><div class="robot-antenna"></div><div class="robot-thoughts"><div class="robot-thought-dot"></div><div class="robot-thought-dot"></div><div class="robot-thought-dot"></div></div><div class="robot-head"><div class="robot-eyes"><div class="robot-eye"></div><div class="robot-eye"></div></div><div class="robot-mouth"></div></div></div><span class="robot-text">正在思考...</span>';
+        messages.appendChild(typing);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function removeTypingIndicator() {
+        var el = document.getElementById("typingIndicator");
+        if (el) el.remove();
+      }
+
       async function askQuestion(question) {
         if (!question) {
           return;
@@ -192,7 +206,7 @@
         appendBubble(question, "user");
         questionInput.value = "";
         submitButton.disabled = true;
-        submitButton.textContent = "思考中...";
+        addTypingIndicator();
 
         try {
           var response = await fetch("/api/assistant", {
@@ -202,6 +216,8 @@
             },
             body: JSON.stringify({ placeId: placeId, question: question }),
           });
+
+          removeTypingIndicator();
 
           var contentType = response.headers.get("content-type") || "";
           var isJson = contentType.includes("application/json");
@@ -240,10 +256,10 @@
             : "";
           appendBubble(payload.answer + "\n\n（回答来源：" + sourceLabel + "）" + fallbackTip, "bot");
         } catch (error) {
+          removeTypingIndicator();
           appendBubble("网络请求失败，请稍后重试。", "bot");
         } finally {
           submitButton.disabled = false;
-          submitButton.textContent = "提问";
           questionInput.focus();
         }
       }

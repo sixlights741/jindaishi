@@ -90,5 +90,27 @@
     ],
     "videoUrl": "https://www.bilibili.com/video/BV1HwRgBPEbb/?spm_id_from=333.1007.tianma.1-3-3.click&vd_source=a28378bdd3cc4e885eef4c180631183b",
     "qaRules": []
+  },
+  {
+    "id": "ceshi",
+    "name": "测试",
+    "px": 1232,
+    "py": 1392,
+    "period": "2025-2026",
+    "summary": "wu",
+    "content": "wu",
+    "image": "/uploads/1778066066408-550884503.png",
+    "videoUrl": "https://www.bilibili.com/video/BV1UHdZBUEDJ/?spm_id_from=333.1007.tianma.1-1-1.click&vd_source=a28378bdd3cc4e885eef4c180631183b",
+    "drawings": [
+      {
+        "url": "/uploads/1778066066431-913265139.jpg",
+        "caption": "第一行的说明"
+      },
+      {
+        "url": "/uploads/1778066066454-132867488.jpg",
+        "caption": "第二行的说明"
+      }
+    ],
+    "qaRules": []
   }
 ]
