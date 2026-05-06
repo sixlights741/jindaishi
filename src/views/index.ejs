@@ -94,24 +94,63 @@
       const placesDataEl = document.getElementById("places-data");
       const places = JSON.parse(placesDataEl?.textContent || "[]");
       const markersEl = document.getElementById("mapMarkers");
-      if (!markersEl) return;
+      const mapImg = document.querySelector(".map-base-img");
+      if (!markersEl || !mapImg) return;
 
-      const imgW = 1728, imgH = 2368;
+      // map_pic.jpg 实际像素尺寸
+      const IMG_W = 4096, IMG_H = 2988;
 
+      // 创建所有标记点 DOM（先隐藏）
+      const markerEls = [];
       places.forEach((place) => {
         if (place.px == null || place.py == null) return;
-        const leftPct = (place.px / imgW * 100).toFixed(2);
-        const topPct = (place.py / imgH * 100).toFixed(2);
-
         const marker = document.createElement("a");
         marker.href = "/place/" + place.id;
         marker.className = "map-marker";
         marker.title = place.name;
-        marker.style.left = leftPct + "%";
-        marker.style.top = topPct + "%";
+        marker.style.visibility = "hidden";
         marker.innerHTML = '<span class="map-marker-dot"></span><span class="map-marker-label">' + place.name + '</span>';
         markersEl.appendChild(marker);
+        markerEls.push({ el: marker, px: place.px, py: place.py });
       });
+
+      // 根据图片实际显示区域重新定位标记点
+      function repositionMarkers() {
+        if (markerEls.length === 0) return;
+        var containerRect = markersEl.getBoundingClientRect();
+        if (containerRect.width === 0 || containerRect.height === 0) return;
+        var imgRect = mapImg.getBoundingClientRect();
+        if (imgRect.width === 0 || imgRect.height === 0) return;
+
+        // 图片在容器内的偏移（object-fit: contain 可能导致留白）
+        var offsetX = imgRect.left - containerRect.left;
+        var offsetY = imgRect.top - containerRect.top;
+        var imgW = imgRect.width;
+        var imgH = imgRect.height;
+
+        markerEls.forEach(function(item) {
+          // 坐标在图片实际显示区域中的像素位置
+          // 注意：Leaflet CRS.Simple 的 lat（即 py）从底部向上增长，
+          // 但 CSS top 从顶部向下增长，所以 Y 轴需要翻转
+          var xInImg = (item.px / IMG_W) * imgW;
+          var yInImg = ((IMG_H - item.py) / IMG_H) * imgH;
+          // 转换为容器内的像素位置
+          var x = offsetX + xInImg;
+          var y = offsetY + yInImg;
+          // 转换为容器百分比
+          item.el.style.left = (x / containerRect.width * 100).toFixed(2) + "%";
+          item.el.style.top  = (y / containerRect.height * 100).toFixed(2) + "%";
+          item.el.style.visibility = "visible";
+        });
+      }
+
+      // 图片加载完成后定位，窗口大小变化时重新定位
+      if (mapImg.complete) {
+        repositionMarkers();
+      } else {
+        mapImg.addEventListener("load", repositionMarkers, { once: true });
+      }
+      window.addEventListener("resize", repositionMarkers);
     })();
   </script>
 
