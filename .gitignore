@@ -16,3 +16,10 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# runtime data with secrets / PII (keep places.json tracked)
+data/ai_config.json
+data/users.json
+data/student_ids.json
+data/admin_ids.json
+data/visit-counter.json

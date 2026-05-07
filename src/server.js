@@ -147,7 +147,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "neu-history-map-secret",
+    secret: process.env.SESSION_SECRET || require("crypto").randomBytes(32).toString("hex"),
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -337,7 +337,7 @@ function findMatchedPresetQa(place, question) {
 
 async function callCloudAssistant(place, question) {
   const aiConfig = getAiConfig();
-  const apiKey = aiConfig.apiKey || process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || aiConfig.apiKey;
   if (!apiKey) {
     return null;
   }
@@ -650,7 +650,7 @@ app.post("/admin/ai-settings", requireAuth, requireAdmin, (req, res) => {
 
 app.get("/admin/ai-settings/info", requireAuth, requireAdmin, (req, res) => {
   const config = getAiConfig();
-  const apiKey = config.apiKey || process.env.AI_API_KEY || process.env.OPENAI_API_KEY || "";
+  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || config.apiKey || "";
   const model = config.model || process.env.AI_MODEL || "";
   return res.json({
     apiKeyMasked: maskApiKey(apiKey),
