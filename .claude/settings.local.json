@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(npx kill-port *)",
+      "Bash(cd /d C:\\\\Users\\\\Administrator\\\\Desktop\\\\xiaoshiditu)",
+      "Bash(node src/server.js)",
+      "Bash(curl -s -X POST http://localhost:3000/login -d \"studentId=1&password=1\" -c /tmp/cookies.txt -L -o /tmp/login_output.txt -w \"%{http_code}\")",
+      "Bash(cat /tmp/cookies.txt)",
+      "Bash(head -c 500 /tmp/login_output.txt)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -X POST \"http://localhost:3000/login\" -d \"studentId=1&password=1\" -c /tmp/cookies.txt -D /tmp/headers.txt -o /tmp/login_body.html -w \"HTTP_CODE: %{http_code}\\\\nREDIRECT_URL: %{redirect_url}\\\\n\")",
+      "Bash(curl -s \"http://localhost:3000/\" -b /tmp/cookies.txt -o /tmp/index.html)",
+      "Bash(curl -s \"http://localhost:3000/admin\" -b /tmp/cookies.txt -o /tmp/admin.html -w \"HTTP_CODE: %{http_code}\\\\n\")"
+    ]
+  }
+}
