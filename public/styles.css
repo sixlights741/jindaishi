@@ -93,6 +93,15 @@ body::after {
   background: transparent;
 }
 
+.auth-plain {
+  background: #000 !important;
+}
+
+.auth-plain::before,
+.auth-plain::after {
+  display: none !important;
+}
+
 /* ===== 管理员编辑/新增地点 纯色背景，不显示背景图 ===== */
 .admin-form-body {
   background: #f5f0e1 !important;
