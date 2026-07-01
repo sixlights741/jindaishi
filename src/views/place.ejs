@@ -25,7 +25,9 @@
 
   <main class="detail-container">
     <article class="detail-card">
-      <img src="<%= place.image %>" alt="<%= place.name %>" class="detail-image" />
+      <% if (place.image) { %>
+        <img src="<%= place.image %>" alt="<%= place.name %>" class="detail-image" />
+      <% } %>
       <p class="tag"><%= place.period %></p>
       <p class="lead"><%= place.summary %></p>
       <div class="content"><%= place.content %></div>
@@ -298,6 +300,85 @@
     <p>辽ICP备2026009544号-1</p>
     <p>联系QQ：228343975</p>
   </footer>
+
+  <!-- 图片灯箱 -->
+  <div class="image-lightbox" id="imageLightbox">
+    <button class="image-lightbox-close" id="imageLightboxClose" type="button">&times;</button>
+    <div class="image-lightbox-content">
+      <img class="image-lightbox-img" id="imageLightboxImg" src="" alt="" />
+      <p class="image-lightbox-caption" id="imageLightboxCaption"></p>
+    </div>
+  </div>
+
+  <!-- 图片灯箱交互 -->
+  <script>
+    (function () {
+      var lightbox = document.getElementById("imageLightbox");
+      var lightboxImg = document.getElementById("imageLightboxImg");
+      var lightboxCaption = document.getElementById("imageLightboxCaption");
+      var closeBtn = document.getElementById("imageLightboxClose");
+
+      function openLightbox(src, caption) {
+        lightboxImg.src = src;
+        lightboxImg.alt = caption || "";
+        lightboxCaption.textContent = caption || "";
+        lightbox.classList.add("open");
+        document.body.style.overflow = "hidden";
+      }
+
+      function closeLightbox() {
+        lightbox.classList.remove("open");
+        document.body.style.overflow = "";
+        setTimeout(function () {
+          if (!lightbox.classList.contains("open")) {
+            lightboxImg.src = "";
+          }
+        }, 350);
+      }
+
+      // 主图点击
+      var detailImage = document.querySelector(".detail-image");
+      if (detailImage) {
+        detailImage.addEventListener("click", function () {
+          openLightbox(detailImage.src, detailImage.alt);
+        });
+      }
+
+      // 手绘图点击
+      var drawingItems = document.querySelectorAll(".drawing-item img");
+      drawingItems.forEach(function (img) {
+        img.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var caption = "";
+          var drawingItem = img.closest(".drawing-item");
+          if (drawingItem) {
+            var captionEl = drawingItem.querySelector("p");
+            if (captionEl) {
+              caption = captionEl.textContent.trim();
+            }
+          }
+          openLightbox(img.src, caption || img.alt);
+        });
+      });
+
+      // 关闭按钮
+      closeBtn.addEventListener("click", closeLightbox);
+
+      // 点击遮罩关闭
+      lightbox.addEventListener("click", function (e) {
+        if (e.target === lightbox) {
+          closeLightbox();
+        }
+      });
+
+      // ESC 关闭
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && lightbox.classList.contains("open")) {
+          closeLightbox();
+        }
+      });
+    })();
+  </script>
 
   <% if (user && user.isAdmin) { %>
   <div class="visit-badge">

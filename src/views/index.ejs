@@ -205,6 +205,10 @@
     (function() {
       var canvas = document.getElementById("particles-canvas");
       if (!canvas) return;
+
+      // 移动端（≤900px）完全跳过粒子系统以提升性能
+      if (window.innerWidth <= 900) return;
+
       var ctx = canvas.getContext("2d");
       var w, h, mouseX = -999, mouseY = -999;
       var particles = [];

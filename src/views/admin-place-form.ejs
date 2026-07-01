@@ -72,24 +72,24 @@
       </div>
 
       <div class="form-group">
-        <label>历史时期</label>
-        <input type="text" name="period" value="<%= place.period %>" required />
+        <label>历史时期（可选）</label>
+        <input type="text" name="period" value="<%= place.period %>" />
       </div>
 
       <div class="form-group">
-        <label>摘要</label>
-        <textarea name="summary" rows="2" required><%= place.summary %></textarea>
+        <label>摘要（可选）</label>
+        <textarea name="summary" rows="2"><%= place.summary %></textarea>
       </div>
 
       <div class="form-group">
-        <label>详细介绍</label>
-        <textarea name="content" rows="6" required><%= place.content %></textarea>
+        <label>详细介绍（可选）</label>
+        <textarea name="content" rows="6"><%= place.content %></textarea>
       </div>
 
       <div class="form-group">
-        <label>主图上传</label>
+        <label>主图上传（可选）</label>
         <input type="file" name="imageFile" id="imageFileInput" accept="image/*" style="color:#fff;" />
-        <p class="hint">编辑时不选择则保留原图</p>
+        <p class="hint">编辑时不选择则保留原图；新增时可不传</p>
         <input type="hidden" name="image" id="imageInput" value="<%= place.image %>" />
         <div class="preview-box">
           <p class="hint" id="mainImageHint" style="margin-top:0;">主图预览区域</p>

@@ -1013,6 +1013,13 @@ button:hover::after,
   border-radius: 14px;
   max-height: 400px;
   object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.detail-image:hover {
+  transform: scale(1.015);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
 }
 
 .tag {
@@ -1088,6 +1095,12 @@ button:hover::after,
   height: 170px;
   object-fit: cover;
   display: block;
+  cursor: pointer;
+  transition: transform 0.22s ease;
+}
+
+.drawing-item img:hover {
+  transform: scale(1.03);
 }
 
 .drawing-item p {
@@ -1367,6 +1380,11 @@ button:hover::after,
 }
 
 @media (max-width: 900px) {
+  /* ===== 移动端性能优化：关闭粒子画布 ===== */
+  #particles-canvas {
+    display: none !important;
+  }
+
   body::before {
     top: 0;
     left: 0;
@@ -1384,12 +1402,30 @@ button:hover::after,
     display: none;
   }
 
+  /* ===== 移动端移除 backdrop-filter 模糊（GPU 杀手） ===== */
+  .topbar,
+  .panel,
+  .detail-card,
+  .auth-card,
+  .stack-preview .preview-card,
+  .places-backdrop,
+  .pop-card,
+  .hero-stats,
+  .assistant-panel,
+  .visit-badge,
+  .ai-float-overlay,
+  .ai-float-dialog,
+  .ai-float-ball-label,
+  .preview-card,
+  .image-lightbox {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
   .topbar,
   .panel,
   .detail-card,
   .auth-card {
-    backdrop-filter: blur(8px) saturate(1.15);
-    -webkit-backdrop-filter: blur(8px) saturate(1.15);
     background: rgba(10, 14, 30, 0.72);
     box-shadow: 0 12px 22px rgba(0, 0, 0, 0.28);
   }
@@ -1397,6 +1433,128 @@ button:hover::after,
   .assistant-panel {
     background: rgba(12, 16, 32, 0.75);
     border-color: rgba(120, 170, 255, 0.4);
+  }
+
+  /* ===== 移动端禁用面板流光扫过动画 ===== */
+  .panel::after,
+  .detail-card::after {
+    display: none !important;
+  }
+
+  /* ===== 移动端禁用预览卡呼吸光效 ===== */
+  .stack-preview:not(.hiding) {
+    animation: none !important;
+  }
+
+  /* ===== 移动端禁用箭头弹跳动画 ===== */
+  .preview-arrow {
+    animation: none !important;
+  }
+
+  /* ===== 移动端禁用地图标记点脉冲动画 ===== */
+  .map-marker::before,
+  .map-marker::after {
+    animation: none !important;
+    box-shadow: none !important;
+  }
+
+  .map-marker-dot {
+    animation: none !important;
+  }
+
+  .map-marker:hover::before,
+  .map-marker:hover::after {
+    animation: none !important;
+  }
+
+  /* ===== 移动端简化标记点光晕（用静态阴影替代动画） ===== */
+  .map-marker::before {
+    box-shadow:
+      0 0 10px 5px rgba(88, 166, 255, 0.35),
+      0 0 20px 8px rgba(88, 166, 255, 0.12) !important;
+  }
+
+  .map-marker::after {
+    box-shadow:
+      0 0 5px 2px rgba(255, 255, 255, 0.6),
+      0 0 12px 5px rgba(88, 166, 255, 0.3) !important;
+  }
+
+  .map-marker-dot {
+    box-shadow:
+      0 0 3px 1px rgba(255, 255, 255, 0.9),
+      0 0 8px 3px rgba(88, 166, 255, 0.4) !important;
+  }
+
+  /* ===== 移动端禁用 AI 悬浮球脉冲动画 ===== */
+  .ai-float-ball {
+    animation: none !important;
+  }
+
+  /* ===== 移动端简化 hover 动效 ===== */
+  .panel:hover,
+  .detail-card:hover {
+    transform: none !important;
+  }
+
+  button:hover,
+  .btn:hover {
+    transform: none !important;
+  }
+
+  .pop-card:hover {
+    transform: none !important;
+  }
+
+  .drawing-item:hover {
+    transform: none !important;
+  }
+
+  .detail-image:hover {
+    transform: none !important;
+  }
+
+  .drawing-item img:hover {
+    transform: none !important;
+  }
+
+  .suggestion-chip:hover {
+    transform: none !important;
+  }
+
+  .visit-badge:hover {
+    transform: none !important;
+  }
+
+  .ai-float-ball:hover {
+    transform: none !important;
+  }
+
+  /* ===== 移动端按钮流光扫过禁用 ===== */
+  button::after,
+  .btn::after {
+    display: none !important;
+  }
+
+  /* ===== 移动端聊天气泡动画禁用 ===== */
+  .assistant-bubble {
+    animation: none !important;
+  }
+
+  /* ===== 移动端禁用机器人思考动画 ===== */
+  .robot-head,
+  .robot-antenna::after,
+  .robot-eye,
+  .robot-mouth::after,
+  .robot-text,
+  .robot-thought-dot {
+    animation: none !important;
+  }
+
+  /* ===== 移动端交错入场动画禁用 ===== */
+  .stagger-item {
+    animation: none !important;
+    opacity: 1 !important;
   }
 
   .topbar {
@@ -2080,5 +2238,107 @@ button:hover::after,
 
   .ai-dialog-body {
     padding: 10px 14px;
+  }
+}
+
+/* ===== 图片灯箱 ===== */
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(3, 5, 15, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.image-lightbox.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.image-lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  z-index: 10;
+  line-height: 1;
+}
+
+.image-lightbox-close:hover {
+  background: rgba(255, 107, 107, 0.25);
+  border-color: rgba(255, 107, 107, 0.55);
+  box-shadow: 0 0 16px rgba(255, 107, 107, 0.3);
+  transform: scale(1.08);
+}
+
+.image-lightbox-content {
+  max-width: 92vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transform: scale(0.92);
+  transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.image-lightbox.open .image-lightbox-content {
+  transform: scale(1);
+}
+
+.image-lightbox-img {
+  max-width: 92vw;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow:
+    0 24px 56px rgba(0, 0, 0, 0.5),
+    0 0 60px rgba(88, 166, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.image-lightbox-caption {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  letter-spacing: 0.4px;
+  text-align: center;
+  max-width: 600px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 520px) {
+  .image-lightbox-close {
+    top: 12px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .image-lightbox-img {
+    max-width: 96vw;
+    max-height: 78vh;
+  }
+
+  .image-lightbox-caption {
+    font-size: 13px;
   }
 }

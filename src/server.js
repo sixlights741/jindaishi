@@ -283,8 +283,8 @@ function validatePlace(place, isCreate) {
   if (isCreate && !place.id) {
     return "地点 ID 不能为空";
   }
-  if (!place.name || !place.period || !place.summary || !place.content || !place.image) {
-    return "请完整填写地点信息";
+  if (!place.name) {
+    return "地点名称不能为空";
   }
   if (Number.isNaN(place.px) || Number.isNaN(place.py)) {
     return "坐标必须是数字，请在底图上点击选点";
@@ -724,19 +724,6 @@ app.post("/admin/place/new", requireAuth, requireAdmin, upload.fields([
         qaRulesText: req.body.qaRulesText || "",
       },
       error: req.fileValidationError,
-    });
-  }
-  if (!place.image) {
-    return res.status(400).render("admin-place-form", {
-      user: req.session.user,
-      mode: "create",
-      place: {
-        ...place,
-        drawingsText: req.body.drawingsText || "",
-        drawingsCaptions: req.body.drawingsCaptions || "",
-        qaRulesText: req.body.qaRulesText || "",
-      },
-      error: "请上传主图后再提交",
     });
   }
   const error = validatePlace(place, true);
