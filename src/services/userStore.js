@@ -134,7 +134,7 @@ function getUserByStudentId(studentId) {
   const adminIds = getAdminIds();
   return {
     ...user,
-    isAdmin: adminIds.includes(user.studentId),
+    isAdmin: Boolean(user.isAdmin) || adminIds.includes(user.studentId),
   };
 }
 
