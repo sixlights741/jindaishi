@@ -33,34 +33,46 @@
       <div class="content"><%= place.content %></div>
 
       <%
-        const rawVideoUrl = (place.videoUrl || "").trim();
-        let embedUrl = "";
-        if (rawVideoUrl) {
-          if (rawVideoUrl.includes("player.bilibili.com")) {
-            embedUrl = rawVideoUrl;
-          } else {
-            const bvidMatch = rawVideoUrl.match(/BV[0-9A-Za-z]+/);
-            const aidMatch = rawVideoUrl.match(/av(\d+)/i);
-            if (bvidMatch) {
-              embedUrl = `https://player.bilibili.com/player.html?bvid=${bvidMatch[0]}&high_quality=1&autoplay=0`;
-            } else if (aidMatch) {
-              embedUrl = `https://player.bilibili.com/player.html?aid=${aidMatch[1]}&high_quality=1&autoplay=0`;
+        const MAX_VIDEOS = 5;
+        const rawVideoUrls = (Array.isArray(place.videoUrls) ? place.videoUrls : []).slice(0, MAX_VIDEOS);
+        const videoEmbeds = rawVideoUrls
+          .map((rawUrl) => {
+            const url = String(rawUrl || "").trim();
+            if (!url) {
+              return "";
             }
-          }
-        }
+            if (url.includes("player.bilibili.com")) {
+              return url;
+            }
+            const bvidMatch = url.match(/BV[0-9A-Za-z]+/);
+            const aidMatch = url.match(/av(\d+)/i);
+            if (bvidMatch) {
+              return `https://player.bilibili.com/player.html?bvid=${bvidMatch[0]}&high_quality=1&autoplay=0`;
+            }
+            if (aidMatch) {
+              return `https://player.bilibili.com/player.html?aid=${aidMatch[1]}&high_quality=1&autoplay=0`;
+            }
+            return "";
+          })
+          .filter(Boolean);
       %>
 
-      <% if (embedUrl) { %>
+      <% if (videoEmbeds.length > 0) { %>
         <section class="video-section">
           <h3 class="gallery-title">地点视频</h3>
-          <div class="video-embed">
-            <iframe
-              src="<%= embedUrl %>"
-              allowfullscreen
-              webkitallowfullscreen
-              mozallowfullscreen
-              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-            ></iframe>
+          <div class="video-grid">
+            <% videoEmbeds.forEach((embedUrl) => { %>
+              <div class="video-embed">
+                <iframe
+                  src="<%= embedUrl %>"
+                  loading="lazy"
+                  allowfullscreen
+                  webkitallowfullscreen
+                  mozallowfullscreen
+                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                ></iframe>
+              </div>
+            <% }) %>
           </div>
         </section>
       <% } %>

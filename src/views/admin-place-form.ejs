@@ -99,13 +99,12 @@
       </div>
 
       <div class="form-group">
-        <label>B站视频链接 (BV/AV号)</label>
-        <input type="text" name="videoUrl" value="<%= place.videoUrl || '' %>" placeholder="例如: BV1xxxx..." />
+        <label>B站视频链接 (BV/AV号，最多 5 条)</label>
+        <textarea name="videoUrls" id="videoUrlsInput" rows="3" placeholder="每行一条，例如：&#10;https://www.bilibili.com/video/BV1xxxxxxx&#10;BV1yyyyyyy"><%= (Array.isArray(place.videoUrls) ? place.videoUrls : []).join('\n') %></textarea>
+        <p class="hint" id="videoCountHint">已填 0 / 5 条</p>
         <div class="preview-box">
           <p class="hint" id="videoPreviewHint" style="margin-top:0;">视频预览区域</p>
-          <div id="videoPreview" style="display:none;">
-            <iframe id="videoPreviewFrame" src="" allowfullscreen></iframe>
-          </div>
+          <div id="videoPreviewGrid" class="video-grid"></div>
         </div>
       </div>
 
@@ -120,8 +119,9 @@
       </div>
 
       <div class="form-group">
-        <label>手绘图说明 (可选，按段落对应如需要)</label>
-        <textarea name="drawingsCaptions" id="drawingsCaptionsInput" rows="3" placeholder="按行说明..."><%= place.drawingsCaptions || '' %></textarea>
+        <label>手绘图说明 (可选)</label>
+        <textarea name="drawingsCaptions" id="drawingsCaptionsInput" rows="3" placeholder="每行一条，对应预览中的第 1、2、3 张图；该行留空则不写说明"><%= place.drawingsCaptions || '' %></textarea>
+        <p class="hint">第 1 行对应第 1 张图，以此类推；行数少于图片数时，其余图片保留原说明。</p>
       </div>
 
       <div class="form-group">
@@ -186,13 +186,15 @@
   const imageFileInput = document.getElementById("imageFileInput");
   const drawingFilesInput = document.getElementById("drawingFilesInput");
   const drawingsTextInput = document.getElementById("drawingsTextInput");
+  const drawingsCaptionsInput = document.getElementById("drawingsCaptionsInput");
   const drawingsPreviewGrid = document.getElementById("drawingsPreviewGrid");
       const drawingsEmptyHint = document.getElementById("drawingsEmptyHint");
   const deleteMainImageBtn = document.getElementById('deleteMainImageBtn');
-  const videoInput = document.querySelector("input[name='videoUrl']");
-  const videoPreview = document.getElementById("videoPreview");
-  const videoPreviewFrame = document.getElementById("videoPreviewFrame");
+  const videoUrlsInput = document.getElementById("videoUrlsInput");
+  const videoPreviewGrid = document.getElementById("videoPreviewGrid");
   const videoPreviewHint = document.getElementById("videoPreviewHint");
+  const videoCountHint = document.getElementById("videoCountHint");
+  const MAX_VIDEO_COUNT = 5;
   const MAX_UPLOAD_MB = 20;
   const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
@@ -238,16 +240,25 @@
           isUpload: true,
         }));
 
+        // 已有手绘图在前、本次新上传的追加在后，与保存后的画廊顺序一致，
+        // 这样“手绘图说明”里的第 N 行就对应这里的第 N 张。
+        const allItems = [...items, ...uploadedItems];
+        const captionLines = (drawingsCaptionsInput?.value || "").split("\n");
+
         drawingsPreviewGrid.innerHTML = "";
 
-        if (items.length === 0 && uploadedItems.length === 0) {
+        if (allItems.length === 0) {
           drawingsEmptyHint.style.display = "block";
           return;
         }
 
         drawingsEmptyHint.style.display = "none";
 
-        [...uploadedItems, ...items].forEach((item, index) => {
+        allItems.forEach((item, index) => {
+          const typedCaption = index < captionLines.length ? captionLines[index].trim() : "";
+          // 说明框里写了的按写的显示，没写的显示原说明（新图则显示文件名）
+          const shownCaption = typedCaption || item.caption || (item.isUpload ? `上传图 ${index + 1}` : "手绘图");
+
           const card = document.createElement("div");
           card.style.background = "#222";
           card.style.padding = "5px";
@@ -255,13 +266,13 @@
 
           const img = document.createElement("img");
           img.src = item.url;
-          img.alt = item.caption || `手绘图预览 ${index + 1}`;
+          img.alt = shownCaption;
 
           const caption = document.createElement("p");
           caption.style.fontSize = "12px";
           caption.style.color = "#ccc";
           caption.style.margin = "5px 0";
-          caption.textContent = item.caption || `第 ${index + 1} 张`;
+          caption.textContent = `第 ${index + 1} 张：${shownCaption}`;
 
           card.appendChild(img);
           card.appendChild(caption);
@@ -288,6 +299,14 @@
                   // rebuild drawingsText from returned place.drawings
                   const newText = (data.place && Array.isArray(data.place.drawings)) ? data.place.drawings.map(d => `${d.url} | ${d.caption || ''}`).join('\n') : '';
                   drawingsTextInput.value = newText;
+                  // 同步删掉说明框里对应的一行，否则后面的说明会整体错位
+                  if (drawingsCaptionsInput) {
+                    const boxLines = (drawingsCaptionsInput.value || "").split("\n");
+                    if (index < boxLines.length) {
+                      boxLines.splice(index, 1);
+                      drawingsCaptionsInput.value = boxLines.join("\n");
+                    }
+                  }
                   renderDrawingsPreview();
                   showNotice('手绘图已删除', 'success');
                 } else {
@@ -324,18 +343,38 @@
         return "";
       }
 
-      function setVideoPreview() {
-        const embedUrl = buildBilibiliEmbed(videoInput?.value || "");
-        if (!embedUrl) {
-          videoPreview.style.display = "none";
-          videoPreviewFrame.removeAttribute("src");
+      function renderVideoPreviews() {
+        const urls = (videoUrlsInput?.value || "")
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+
+        videoCountHint.textContent = `已填 ${urls.length} / ${MAX_VIDEO_COUNT} 条`;
+        videoCountHint.style.color = urls.length > MAX_VIDEO_COUNT ? "#ff9c9c" : "";
+
+        videoPreviewGrid.innerHTML = "";
+
+        const embeds = urls.slice(0, MAX_VIDEO_COUNT).map(buildBilibiliEmbed).filter(Boolean);
+
+        if (embeds.length === 0) {
           videoPreviewHint.textContent = "请输入 B 站视频链接以查看预览";
           videoPreviewHint.style.display = "block";
           return;
         }
-        videoPreview.style.display = "block";
-        videoPreviewFrame.src = embedUrl;
+
         videoPreviewHint.style.display = "none";
+
+        embeds.forEach((embedUrl) => {
+          const box = document.createElement("div");
+          box.className = "video-embed";
+          const iframe = document.createElement("iframe");
+          iframe.src = embedUrl;
+          iframe.loading = "lazy";
+          iframe.allowFullscreen = true;
+          iframe.setAttribute("allow", "autoplay; fullscreen; picture-in-picture; encrypted-media");
+          box.appendChild(iframe);
+          videoPreviewGrid.appendChild(box);
+        });
       }
 
       mainImagePreview.addEventListener("error", () => {
@@ -414,13 +453,16 @@
         });
       }
       drawingsTextInput.addEventListener("input", renderDrawingsPreview);
-      if (videoInput) {
-        videoInput.addEventListener("input", setVideoPreview);
+      if (drawingsCaptionsInput) {
+        drawingsCaptionsInput.addEventListener("input", renderDrawingsPreview);
+      }
+      if (videoUrlsInput) {
+        videoUrlsInput.addEventListener("input", renderVideoPreviews);
       }
 
   setMainPreview();
   renderDrawingsPreview();
-      setVideoPreview();
+      renderVideoPreviews();
     })();
   </script>
 

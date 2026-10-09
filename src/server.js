@@ -25,13 +25,17 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+// multer 1.x 底层的 busboy 按 latin1 解析 multipart 文件名，中文名会读成
+// 「æµ‹è¯•」这类乱码，交给 uploadedFileName 里的工具还原。
+const { decodeUploadedFileName, captionFromUploadedFile } = require("./services/uploadedFileName");
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
       cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname || "").toLowerCase();
+      const ext = path.extname(decodeUploadedFileName(file.originalname)).toLowerCase();
       const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext || ".jpg"}`;
       cb(null, safeName);
     },
@@ -190,14 +194,18 @@ function parseDrawings(rawText) {
   }
 
   return rawText
-    .split("\n")
+    .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [urlPart, captionPart] = line.split("|");
+      // 只按第一个竖线切分，说明里带竖线时不会被截断
+      const separatorIndex = line.indexOf("|");
+      if (separatorIndex === -1) {
+        return { url: line, caption: "" };
+      }
       return {
-        url: (urlPart || "").trim(),
-        caption: (captionPart || "").trim(),
+        url: line.slice(0, separatorIndex).trim(),
+        caption: line.slice(separatorIndex + 1).trim(),
       };
     })
     .filter((item) => item.url);
@@ -208,6 +216,14 @@ function drawingsToText(drawings) {
     return "";
   }
   return drawings.map((item) => `${item.url} | ${item.caption || ""}`).join("\n");
+}
+
+// 编辑页把手绘图说明回填进说明框，一行一张，行号与画廊顺序一致
+function drawingsToCaptionLines(drawings) {
+  if (!Array.isArray(drawings) || drawings.length === 0) {
+    return "";
+  }
+  return drawings.map((item) => item.caption || "").join("\n");
 }
 
 function parseQaRules(rawText) {
@@ -236,31 +252,49 @@ function qaRulesToText(qaRules) {
   return qaRules.map((item) => `${item.question} | ${item.answer}`).join("\n");
 }
 
-function parseCaptionLines(rawText) {
+// 一个地点最多挂 5 条视频
+const MAX_VIDEO_COUNT = 5;
+
+// 视频链接按行填写，一行一条（粘贴 B 站链接或 BV/av 号都行）
+function parseVideoUrls(rawText) {
   if (!rawText || !rawText.trim()) {
     return [];
   }
   return rawText
-    .split("\n")
-    .map((line) => line.trim());
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
+function parseCaptionLines(rawText) {
+  if (!rawText || !rawText.trim()) {
+    return [];
+  }
+  const lines = rawText.split(/\r?\n/).map((line) => line.trim());
+  // 末尾的换行不带内容，直接忽略；中间的空行表示该张图不写说明
+  while (lines.length > 0 && !lines[lines.length - 1]) {
+    lines.pop();
+  }
+  return lines;
+}
+
+// 说明框按行对应画廊里的第 1、2、3 张图：已有手绘图在前，本次新上传的追加在后。
+// 行数比图片少时，多出来的图保持原说明（新图用文件名兜底）；某行为空则表示这张图不写说明。
 function mergeUploadedDrawings(drawingsText, uploadedFiles, captionText) {
   const baseDrawings = parseDrawings(drawingsText || "");
-  if (!Array.isArray(uploadedFiles) || uploadedFiles.length === 0) {
-    return baseDrawings;
-  }
+  const files = Array.isArray(uploadedFiles) ? uploadedFiles : [];
+  const uploadedDrawings = files.map((file, index) => ({
+    url: `/uploads/${file.filename}`,
+    caption: captionFromUploadedFile(file, baseDrawings.length + index),
+  }));
+  const drawings = [...baseDrawings, ...uploadedDrawings];
 
   const captions = parseCaptionLines(captionText || "");
-  const uploadedDrawings = uploadedFiles.map((file, index) => {
-    const fallbackCaption = file.originalname ? file.originalname.replace(/\.[^.]+$/, "") : `上传图 ${index + 1}`;
-    return {
-      url: `/uploads/${file.filename}`,
-      caption: (captions[index] || "").trim() || fallbackCaption,
-    };
-  });
+  if (captions.length === 0) {
+    return drawings;
+  }
 
-  return [...baseDrawings, ...uploadedDrawings];
+  return drawings.map((item, index) => (index < captions.length ? { ...item, caption: captions[index] } : item));
 }
 
 function normalizePlaceFromBody(body) {
@@ -273,7 +307,7 @@ function normalizePlaceFromBody(body) {
     summary: (body.summary || "").trim(),
     content: (body.content || "").trim(),
     image: (body.image || "").trim(),
-    videoUrl: (body.videoUrl || "").trim(),
+    videoUrls: parseVideoUrls(body.videoUrls || ""),
     drawings: parseDrawings(body.drawingsText || ""),
     qaRules: parseQaRules(body.qaRulesText || ""),
   };
@@ -288,6 +322,9 @@ function validatePlace(place, isCreate) {
   }
   if (Number.isNaN(place.px) || Number.isNaN(place.py)) {
     return "坐标必须是数字，请在底图上点击选点";
+  }
+  if (Array.isArray(place.videoUrls) && place.videoUrls.length > MAX_VIDEO_COUNT) {
+    return `最多支持 ${MAX_VIDEO_COUNT} 条视频链接，请删减后再保存`;
   }
   return null;
 }
@@ -694,7 +731,7 @@ app.get("/admin/place/new", requireAuth, requireAdmin, (req, res) => {
       summary: "",
       content: "",
       image: "",
-      videoUrl: "",
+      videoUrls: [],
       drawingsText: "",
       drawingsCaptions: "",
       qaRulesText: "",
@@ -771,7 +808,7 @@ app.get("/admin/place/:id/edit", requireAuth, requireAdmin, (req, res) => {
     place: {
       ...place,
       drawingsText: drawingsToText(place.drawings),
-      drawingsCaptions: "",
+      drawingsCaptions: drawingsToCaptionLines(place.drawings),
       qaRulesText: qaRulesToText(place.qaRules),
     },
     error: null,

@@ -1051,6 +1051,14 @@ button:hover::after,
   margin-top: 20px;
 }
 
+/* 一个地点最多 5 条视频：窄屏单列，宽屏两列 */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 14px;
+  margin-top: 6px;
+}
+
 .video-embed {
   position: relative;
   width: 100%;
@@ -1284,15 +1292,6 @@ button:hover::after,
   padding: 10px;
   height: auto;
   position: static;
-}
-
-.video-preview {
-  display: none;
-  margin-bottom: 8px;
-}
-
-.admin-form-card .video-embed {
-  display: none;
 }
 
 .preview-main-image {
