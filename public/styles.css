@@ -1873,6 +1873,8 @@ button:hover::after,
 /* ===== 访问量角标 ===== */
 .visit-badge {
   position: fixed;
+  /* 实际 bottom 由模板里的脚本设置（页脚进视口时会整体抬高）。
+     这里给的是无脚本时的兜底值。 */
   bottom: 24px;
   right: 24px;
   z-index: 999;
@@ -1889,12 +1891,13 @@ button:hover::after,
   color: #ffffff;
   font-size: 13px;
   letter-spacing: 0.3px;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  /* 注意：这里不能用 transform 做位移动画，否则会和脚本切换 position 时的
+     getBoundingClientRect 测量互相干扰（transform 会污染 rect 结果）。 */
+  transition: box-shadow 0.22s ease, border-color 0.22s ease;
   user-select: none;
 }
 
 .visit-badge:hover {
-  transform: translateY(-2px);
   border-color: rgba(124, 194, 255, 0.7);
   box-shadow: 0 14px 30px rgba(88, 166, 255, 0.18);
 }

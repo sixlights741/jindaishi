@@ -392,12 +392,42 @@
     })();
   </script>
 
-  <% if (user && user.isAdmin) { %>
+  <!-- 累计访问角标：访客与普通用户同样可见（visitCount 是全局 res.locals） -->
   <div class="visit-badge">
     <span class="visit-icon">👁</span>
     <span>累计访问</span>
     <span class="visit-count"><%= typeof visitCount !== 'undefined' ? visitCount : 0 %></span>
   </div>
-  <% } %>
+  <script>
+    // 角标固定在右下角，页面滚到底时会压住页脚的备案号/联系方式（任何屏幕宽度都会）。
+    // 页脚进入视口时按实际重叠量把角标顶上去，离开后再放回底部。
+    (function () {
+      var badge = document.querySelector(".visit-badge");
+      var footer = document.querySelector(".site-footer");
+      if (!badge || !footer) return;
+
+      var BASE_BOTTOM = window.innerWidth <= 520 ? 14 : 24;
+      var raf = null;
+
+      function apply() {
+        raf = null;
+        // 先归位再测量：角标自身位置会影响它与页脚的重叠量
+        badge.style.bottom = BASE_BOTTOM + "px";
+        var overlap = badge.getBoundingClientRect().bottom - footer.getBoundingClientRect().top;
+        if (overlap > 0) {
+          badge.style.bottom = BASE_BOTTOM + overlap + 10 + "px";
+        }
+      }
+
+      function schedule() {
+        if (raf !== null) return;
+        raf = window.requestAnimationFrame(apply);
+      }
+
+      window.addEventListener("scroll", schedule, { passive: true });
+      window.addEventListener("resize", schedule);
+      apply();
+    })();
+  </script>
 </body>
 </html>
