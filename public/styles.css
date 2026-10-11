@@ -199,6 +199,32 @@ body::after {
   margin-bottom: 18px;
 }
 
+/* 登录页大标题：固定断成两行（第 1 行「东北大学百年育人兴邦史」11 字，第 2 行「数智地图」）。
+   11 个字在卡片内宽 303px（390 视口）里要放得下，字号必须降到 26px、字距收到 1px；
+   28px 会让这 11 个字自己再折一次，变成三行。 */
+.auth-body .auth-card h1.auth-title {
+  font-size: 26px;
+  letter-spacing: 1px;
+}
+
+/* 360px 及更窄的机型卡片内宽只有 275px，26px 放不下 11 个字（329px），
+   降到 23px（11 字约 259px）才稳。 */
+@media (max-width: 380px) {
+  .auth-body .auth-card h1.auth-title {
+    font-size: 23px;
+    letter-spacing: 0.5px;
+  }
+}
+
+/* 320px 的机型（iPhone SE 一代等）卡片内宽只剩 238px，23px 仍会折，
+   再降到 20px（11 字约 226px）。 */
+@media (max-width: 340px) {
+  .auth-body .auth-card h1.auth-title {
+    font-size: 20px;
+    letter-spacing: 0.5px;
+  }
+}
+
 .auth-body .auth-card .form {
   text-align: left;
 }
