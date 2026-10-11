@@ -20,9 +20,11 @@
       <% if (user.isAdmin) { %>
         <a href="/admin" class="btn">管理员后台</a>
       <% } %>
-  <a href="/profile/password" class="btn ghost">改密码</a>
+      <% if (!user.isGuest) { %>
+        <a href="/profile/password" class="btn ghost">改密码</a>
+      <% } %>
       <form method="post" action="/logout">
-        <button type="submit" class="btn">退出登录</button>
+        <button type="submit" class="btn"><%= user.isGuest ? "退出访客" : "退出登录" %></button>
       </form>
     </div>
   </header>

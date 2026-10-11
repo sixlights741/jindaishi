@@ -188,6 +188,14 @@ function requireAdmin(req, res, next) {
   return res.status(403).render("not-found", { message: "无权限访问管理员页面" });
 }
 
+// 访客没有真实账号，禁止改密码等账号相关页面
+function requireRealUser(req, res, next) {
+  if (req.session.user && req.session.user.isGuest) {
+    return res.redirect("/");
+  }
+  return next();
+}
+
 function parseDrawings(rawText) {
   if (!rawText || !rawText.trim()) {
     return [];
@@ -496,6 +504,7 @@ async function callCloudAssistantWithRetry(place, question) {
   };
 }
 
+// 登录方式选择页：左「登录」跳账号密码登录，右「访客」直接进主页
 app.get("/login", (req, res) => {
   if (req.session.user) {
     return res.redirect("/");
@@ -503,15 +512,32 @@ app.get("/login", (req, res) => {
   return res.render("login", { error: null });
 });
 
+app.get("/login/account", (req, res) => {
+  if (req.session.user) {
+    return res.redirect("/");
+  }
+  return res.render("login-account", { error: null, studentId: "" });
+});
+
+app.post("/login/guest", (req, res) => {
+  req.session.user = {
+    studentId: "访客",
+    mustChangePassword: false,
+    isAdmin: false,
+    isGuest: true,
+  };
+  return res.redirect("/");
+});
+
 app.post("/login", async (req, res) => {
   const { studentId, password } = req.body;
   if (!studentId || !password) {
-    return res.status(400).render("login", { error: "请输入学号和密码" });
+    return res.status(400).render("login-account", { error: "请输入学号和密码", studentId: studentId || "" });
   }
 
   const user = await verifyUser(studentId.trim(), password);
   if (!user) {
-    return res.status(401).render("login", { error: "学号或密码错误" });
+    return res.status(401).render("login-account", { error: "学号或密码错误", studentId });
   }
 
   req.session.user = {
@@ -591,7 +617,7 @@ app.post("/api/assistant", requireAuth, async (req, res) => {
   });
 });
 
-app.get("/profile/password", requireAuth, (req, res) => {
+app.get("/profile/password", requireAuth, requireRealUser, (req, res) => {
   res.render("change-password", {
     user: req.session.user,
     error: null,
@@ -600,7 +626,7 @@ app.get("/profile/password", requireAuth, (req, res) => {
   });
 });
 
-app.post("/profile/password", requireAuth, async (req, res) => {
+app.post("/profile/password", requireAuth, requireRealUser, async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
   const studentId = req.session.user.studentId;
 

@@ -17,13 +17,18 @@
       <p class="error"><%= error %></p>
     <% } %>
 
-    <form method="post" action="/login" class="form">
-      <input type="text" name="studentId" placeholder="学号：如20250001" required />
-
-      <input type="password" name="password" placeholder="密码：初始密码为学号" required />
-
-      <button type="submit">进入地图</button>
-    </form>
+    <div class="auth-choice">
+      <a href="/login/account" class="circle-btn" aria-label="登录">
+        <span class="circle-icon">🔑</span>
+        <span class="circle-label">登录</span>
+      </a>
+      <form method="post" action="/login/guest" class="circle-form">
+        <button type="submit" class="circle-btn circle-btn-guest" aria-label="访客">
+          <span class="circle-icon">👀</span>
+          <span class="circle-label">访客</span>
+        </button>
+      </form>
+    </div>
   </main>
 </body>
 </html>
