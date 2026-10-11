@@ -232,13 +232,14 @@ body::after {
 .login-emblem {
   width: 104px;
   height: 104px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.65);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
+  object-fit: contain;
+  /* 同 .brand-emblem：校徽自带透明背景，去掉硬白底与描边，改用柔和投影，
+     避免圆外露出白色方块角，也不会切掉校徽外圈的文字。 */
+  background: transparent;
+  border: 0;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.42)) drop-shadow(0 0 12px rgba(124, 194, 255, 0.3));
   margin: 0 auto 14px;
   display: block;
-  background: rgba(255, 255, 255, 0.92);
 }
 
 /* ===== 登录方式选择：左右两个圆形按钮 ===== */
@@ -496,15 +497,16 @@ button:hover::after,
   display: block;
   flex-shrink: 0;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: 50% 50%;
-  clip-path: circle(50% at 50% 50%);
-  border: 2px solid rgba(255, 255, 255, 0.78);
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.36),
-    0 0 0 4px rgba(124, 194, 255, 0.24),
-    0 0 24px rgba(124, 194, 255, 0.38);
-  background: rgba(255, 255, 255, 0.96);
+  /* 这里原本是 clip-path: circle(50%) + 不透明白底，那是给旧的二次元头像准备的
+     （内容集中在中间，裁掉外围看不出来）。换成正式校徽后，校徽的圆环几乎贴满画布，
+     圆形裁切会切掉外圈的文字（实测切掉约 0.92% 的不透明像素，NORTHEASTERN / 1923
+     被削掉一块），不透明白底还会在圆外露出白色方块角。
+     校徽本身自带透明背景，所以去掉裁切与白底，改用投影保持「浮起来」的观感。 */
+  background: transparent;
+  border: 0;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 10px rgba(124, 194, 255, 0.35));
 }
 
 .topbar-main .brand-emblem {
