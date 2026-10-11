@@ -327,9 +327,18 @@
 
       var BASE_BOTTOM = window.innerWidth <= 520 ? 14 : 24;
       var raf = null;
+      // 地点浮层是全屏弹窗，打开时角标会被卡片列表压住，直接隐藏
+      var overlay = document.getElementById("placesOverlay");
+
+      function isOverlayOpen() {
+        return Boolean(overlay && overlay.classList.contains("active"));
+      }
 
       function apply() {
         raf = null;
+        // 浮层打开时不参与布局计算，隐藏即可
+        badge.classList.toggle("is-hidden", isOverlayOpen());
+        if (isOverlayOpen()) return;
         // 先归位再测量：角标自身位置会影响它与页脚的重叠量
         badge.style.bottom = BASE_BOTTOM + "px";
         var overlap = badge.getBoundingClientRect().bottom - footer.getBoundingClientRect().top;
@@ -345,6 +354,9 @@
 
       window.addEventListener("scroll", schedule, { passive: true });
       window.addEventListener("resize", schedule);
+      if (overlay) {
+        new MutationObserver(schedule).observe(overlay, { attributes: true, attributeFilter: ["class"] });
+      }
       apply();
     })();
   </script>

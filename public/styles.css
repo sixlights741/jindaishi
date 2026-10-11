@@ -1902,6 +1902,12 @@ button:hover::after,
   box-shadow: 0 14px 30px rgba(88, 166, 255, 0.18);
 }
 
+/* 地点浮层是全屏弹窗（z-index 1000），角标在它下方（999）会被卡片列表压住。
+   弹窗打开时把角标藏起来，关闭后由脚本恢复 —— 详情页没有这个浮层，不受影响。 */
+.visit-badge.is-hidden {
+  display: none !important;
+}
+
 .visit-badge .visit-icon {
   font-size: 18px;
   line-height: 1;
