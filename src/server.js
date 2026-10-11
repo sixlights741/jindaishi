@@ -472,11 +472,40 @@ function buildLocalAssistantAnswer(place, question) {
     return `这是“${place.name}”。它属于 ${place.period} 时期。你可以问我：历史背景、主要功能、手绘图看点。`;
   }
 
+  // 问作者/署名的必须先判：否则「这图谁画的」会先命中下面的「图」分支，永远答不到作者
+  if (
+    normalized.includes("谁") || normalized.includes("作者") || normalized.includes("署名") ||
+    normalized.includes("哪一届") || normalized.includes("哪届") || normalized.includes("专业") ||
+    normalized.includes("做的") || normalized.includes("画的")
+  ) {
+    const credited = [];
+    if (place.image && place.imageCredit) {
+      credited.push(`主图：${place.imageCredit}`);
+    }
+    (place.drawings || []).forEach((item, index) => {
+      if (item.credit) {
+        credited.push(`第 ${index + 1} 张${item.caption ? `（${item.caption}）` : ""}：${item.credit}`);
+      }
+    });
+    if (credited.length === 0) {
+      return `${place.name} 的图片暂时还没有登记作者署名。`;
+    }
+    return `${place.name} 的图片署名如下：${credited.join("；")}。`;
+  }
+
   if (normalized.includes("手绘") || normalized.includes("图") || normalized.includes("draw")) {
     if (drawingCount === 0) {
+      // 没有手绘图，但可能有主图，主图也可能有署名
+      if (place.image && place.imageCredit) {
+        return `${place.name} 当前还没有上传手绘图，主图由 ${place.imageCredit} 完成。`;
+      }
       return `${place.name} 当前还没有上传手绘图，你可以先查看主图和文字介绍。`;
     }
-    return `${place.name} 目前有 ${drawingCount} 张手绘图。第一张说明是：${firstDrawingCaption}。你也可以继续问我“这处地点最重要的历史意义是什么”。`;
+    const detail = formatImageFacts({ image: "", drawings: place.drawings })
+      .slice(1) // 去掉“手绘图共 N 张”那行标题，避免与下面的话重复
+      .map((line) => line.trim())
+      .join("；");
+    return `${place.name} 目前有 ${drawingCount} 张手绘图。${detail}。第一张说明是：${firstDrawingCaption}。`;
   }
 
   if (normalized.includes("时间") || normalized.includes("时期") || normalized.includes("年代")) {
@@ -506,6 +535,32 @@ function findMatchedPresetQa(place, question) {
   }) || null;
 }
 
+// 把主图与手绘图的说明、署名整理成给 AI 的资料文本。
+// 署名格式约定为「届别 专业 姓名」，所以学生问「这图谁画的 / 哪一届做的」时能直接答上来。
+function formatImageFacts(place) {
+  const lines = [];
+
+  if (place.image) {
+    const bits = [];
+    if (place.imageCaption) bits.push(`说明：${place.imageCaption}`);
+    if (place.imageCredit) bits.push(`作者：${place.imageCredit}`);
+    lines.push(bits.length ? `主图（${bits.join("，")}）` : "主图（暂无说明与署名）");
+  }
+
+  const drawings = Array.isArray(place.drawings) ? place.drawings : [];
+  if (drawings.length > 0) {
+    lines.push(`手绘图共 ${drawings.length} 张：`);
+    drawings.forEach((item, index) => {
+      const bits = [];
+      if (item.caption) bits.push(`说明：${item.caption}`);
+      if (item.credit) bits.push(`作者：${item.credit}`);
+      lines.push(`  第 ${index + 1} 张${bits.length ? `（${bits.join("，")}）` : "（暂无说明与署名）"}`);
+    });
+  }
+
+  return lines;
+}
+
 async function callCloudAssistant(place, question) {
   const aiConfig = getAiConfig();
   const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || aiConfig.apiKey;
@@ -517,12 +572,16 @@ async function callCloudAssistant(place, question) {
   const apiUrl = (aiConfig.apiUrl || process.env.AI_API_URL || `${baseUrl}/chat/completions`).trim();
   const model = aiConfig.model || process.env.AI_MODEL || "gpt-4o-mini";
 
-  const systemPrompt = "你是东北大学校史地图的讲解小助手。回答应简洁、准确、友好，优先基于给定地点资料，不编造不存在的史实。";
+  const systemPrompt =
+    "你是东北大学校史地图的讲解小助手。回答应简洁、准确、友好，优先基于给定地点资料，不编造不存在的史实。" +
+    "资料里给了每张图的说明与作者署名（格式为「届别 专业 姓名」），学生问到图片的作者、是哪个专业哪一届做的、" +
+    "有几张手绘图这类问题时，直接按资料回答；资料里没有写的内容就说资料里没有，不要推测。";
   const userPrompt = [
     `地点名称：${place.name}`,
     `历史时期：${place.period}`,
     `摘要：${place.summary}`,
     `详细介绍：${place.content}`,
+    ...formatImageFacts(place),
     `用户问题：${question}`,
   ].join("\n");
 
