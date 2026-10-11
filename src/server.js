@@ -29,6 +29,68 @@ if (!fs.existsSync(uploadDir)) {
 // 「æµ‹è¯•」这类乱码，交给 uploadedFileName 里的工具还原。
 const { decodeUploadedFileName, captionFromUploadedFile } = require("./services/uploadedFileName");
 
+// 只信任文件真实内容，不信任客户端声明的 Content-Type：
+// 把纯文本/HTML 改名成 .jpg 再写上 image/jpeg 头就能骗过 fileFilter。
+// public/uploads 是静态目录，一旦混进 .html/.svg 就等于给了上传者一个 XSS 落脚点。
+const IMAGE_SIGNATURES = [
+  { name: "JPEG", bytes: [0xff, 0xd8, 0xff] },
+  { name: "PNG", bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
+  { name: "GIF", bytes: [0x47, 0x49, 0x46, 0x38] },
+  { name: "BMP", bytes: [0x42, 0x4d] },
+];
+
+function readFileHead(filePath, length) {
+  const fd = fs.openSync(filePath, "r");
+  try {
+    const buffer = Buffer.alloc(length);
+    const read = fs.readSync(fd, buffer, 0, length, 0);
+    return buffer.subarray(0, read);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+function hasImageSignature(head) {
+  if (!head || head.length < 2) {
+    return false;
+  }
+  const matches = (bytes) =>
+    head.length >= bytes.length && bytes.every((byte, index) => head[index] === byte);
+
+  if (IMAGE_SIGNATURES.some((item) => matches(item.bytes))) {
+    return true;
+  }
+  // WEBP = RIFF....WEBP
+  return (
+    head.length >= 12 &&
+    head.toString("latin1", 0, 4) === "RIFF" &&
+    head.toString("latin1", 8, 12) === "WEBP"
+  );
+}
+
+// 收下所有已落盘的上传文件，返回第一个内容不是图片的；同时删除本次上传的全部临时文件
+function collectInvalidUpload(req) {
+  const files = Object.values(req.files || {}).flat().filter(Boolean);
+  let invalid = null;
+  files.forEach((file) => {
+    if (!file.path || !fs.existsSync(file.path)) {
+      return;
+    }
+    if (!hasImageSignature(readFileHead(file.path, 12))) {
+      invalid = invalid || file;
+    }
+    try {
+      fs.unlinkSync(file.path);
+    } catch (error) {
+      console.error("清理未通过校验的上传文件失败：", file.path, error.message);
+    }
+  });
+  if (invalid) {
+    return `文件「${decodeUploadedFileName(invalid.originalname)}」不是有效的图片（内容与图片格式不符），已拒绝保存`;
+  }
+  return req.fileValidationError || null;
+}
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
@@ -192,6 +254,19 @@ function requireAdmin(req, res, next) {
 function requireRealUser(req, res, next) {
   if (req.session.user && req.session.user.isGuest) {
     return res.redirect("/");
+  }
+  return next();
+}
+
+// 首次登录必须改密：只靠登录时跳一次 /profile/password 是拦不住的，
+// 用户直接敲 "/" 或 "/place/xxx" 就能绕过，所以每个需要真实身份的页面都要自己挡一道。
+// （改密流程本身、退出登录、静态资源不走这个中间件，否则会死循环。）
+function requirePasswordChanged(req, res, next) {
+  if (req.session.user && req.session.user.mustChangePassword) {
+    if (req.path.startsWith("/api/")) {
+      return res.status(403).json({ error: "请先修改初始密码后再使用讲解助手" });
+    }
+    return res.redirect("/profile/password");
   }
   return next();
 }
@@ -558,7 +633,7 @@ app.post("/logout", (req, res) => {
   });
 });
 
-app.get("/", requireAuth, (req, res) => {
+app.get("/", requireAuth, requirePasswordChanged, (req, res) => {
   const places = getPlaces();
   res.render("index", {
     user: req.session.user,
@@ -566,7 +641,7 @@ app.get("/", requireAuth, (req, res) => {
   });
 });
 
-app.get("/place/:id", requireAuth, (req, res) => {
+app.get("/place/:id", requireAuth, requirePasswordChanged, (req, res) => {
   const place = getPlaceById(req.params.id);
   if (!place) {
     return res.status(404).render("not-found", { message: "未找到该地点" });
@@ -574,7 +649,7 @@ app.get("/place/:id", requireAuth, (req, res) => {
   return res.render("place", { user: req.session.user, place });
 });
 
-app.post("/api/assistant", requireAuth, async (req, res) => {
+app.post("/api/assistant", requireAuth, requirePasswordChanged, async (req, res) => {
   const placeId = (req.body.placeId || "").trim();
   const question = (req.body.question || "").trim();
 
@@ -770,25 +845,30 @@ app.post("/admin/place/new", requireAuth, requireAdmin, upload.fields([
   { name: "imageFile", maxCount: 1 },
   { name: "drawingFiles", maxCount: 12 },
 ]), (req, res) => {
+  // 先校验上传内容（会顺手删掉本次落盘的临时文件），不通过就不要往下走
+  const uploadError = collectInvalidUpload(req);
+  if (uploadError) {
+    return res.status(400).render("admin-place-form", {
+      user: req.session.user,
+      mode: "create",
+      place: {
+        ...normalizePlaceFromBody(req.body),
+        image: "",
+        drawings: parseDrawings(req.body.drawingsText || ""),
+        drawingsText: req.body.drawingsText || "",
+        drawingsCaptions: req.body.drawingsCaptions || "",
+        qaRulesText: req.body.qaRulesText || "",
+      },
+      error: uploadError,
+    });
+  }
+
   const place = normalizePlaceFromBody(req.body);
   const imageFile = req.files?.imageFile?.[0];
   if (imageFile) {
     place.image = `/uploads/${imageFile.filename}`;
   }
   place.drawings = mergeUploadedDrawings(req.body.drawingsText, req.files?.drawingFiles, req.body.drawingsCaptions);
-  if (req.fileValidationError) {
-    return res.status(400).render("admin-place-form", {
-      user: req.session.user,
-      mode: "create",
-      place: {
-        ...place,
-        drawingsText: req.body.drawingsText || "",
-        drawingsCaptions: req.body.drawingsCaptions || "",
-        qaRulesText: req.body.qaRulesText || "",
-      },
-      error: req.fileValidationError,
-    });
-  }
   const error = validatePlace(place, true);
   if (error) {
     return res.status(400).render("admin-place-form", {
@@ -851,6 +931,24 @@ app.post("/admin/place/:id/edit", requireAuth, requireAdmin, upload.fields([
     return res.status(404).render("not-found", { message: "未找到该地点" });
   }
 
+  // 先校验上传内容（会顺手删掉本次落盘的临时文件），不通过就保留原图原样回填
+  const uploadError = collectInvalidUpload(req);
+  if (uploadError) {
+    return res.status(400).render("admin-place-form", {
+      user: req.session.user,
+      mode: "edit",
+      place: {
+        ...normalizePlaceFromBody({ ...req.body, id: currentId }),
+        image: existing.image || "",
+        drawings: existing.drawings || [],
+        drawingsText: req.body.drawingsText || "",
+        drawingsCaptions: req.body.drawingsCaptions || "",
+        qaRulesText: req.body.qaRulesText || "",
+      },
+      error: uploadError,
+    });
+  }
+
   const payload = normalizePlaceFromBody({
     ...req.body,
     id: currentId,
@@ -865,19 +963,6 @@ app.post("/admin/place/:id/edit", requireAuth, requireAdmin, upload.fields([
   payload.drawings = mergeUploadedDrawings(req.body.drawingsText, req.files?.drawingFiles, req.body.drawingsCaptions);
   if (!payload.drawings || payload.drawings.length === 0) {
     payload.drawings = existing.drawings || [];
-  }
-  if (req.fileValidationError) {
-    return res.status(400).render("admin-place-form", {
-      user: req.session.user,
-      mode: "edit",
-      place: {
-        ...payload,
-        drawingsText: req.body.drawingsText || "",
-        drawingsCaptions: req.body.drawingsCaptions || "",
-        qaRulesText: req.body.qaRulesText || "",
-      },
-      error: req.fileValidationError,
-    });
   }
   const error = validatePlace(payload, false);
   if (error) {
@@ -981,6 +1066,33 @@ app.post('/admin/place/:id/image/delete', requireAuth, requireAdmin, (req, res) 
 
 app.use((req, res) => {
   res.status(404).render("not-found", { message: "页面不存在" });
+});
+
+// 兜底错误处理：Express 默认处理器会把完整堆栈（含服务器绝对路径）当成 HTML 回给客户端，
+// 一个畸形的 JSON 请求体就能拿到 node_modules 的目录结构，所以这里全部换成干净响应。
+app.use((err, req, res, next) => {
+  const isJsonRequest = Boolean(req.path && req.path.startsWith("/api/")) ||
+    String(req.headers.accept || "").includes("application/json") ||
+    String(req.headers["content-type"] || "").includes("application/json");
+
+  if (err && (err.type === "entity.parse.failed" || err instanceof SyntaxError && "body" in err)) {
+    console.error("请求体解析失败：", req.method, req.originalUrl, err.message);
+    return isJsonRequest
+      ? res.status(400).json({ error: "请求体不是合法的 JSON" })
+      : res.status(400).render("not-found", { message: "请求格式不正确" });
+  }
+
+  if (err && err.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ error: "上传文件超过 20MB 限制，请压缩后再试" });
+  }
+
+  console.error("未处理的请求错误：", req.method, req.originalUrl, err && err.stack ? err.stack : err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  return isJsonRequest
+    ? res.status(500).json({ error: "服务器内部错误" })
+    : res.status(500).render("not-found", { message: "服务器内部错误" });
 });
 
 const server = app.listen(PORT, () => {

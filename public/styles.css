@@ -1129,6 +1129,9 @@ button:hover::after,
 .content {
   color: #ffffff;
   line-height: 1.8;
+  /* 后台「详细介绍」是多段文本（places.json 里用换行分段），
+     不设 pre-wrap 的话所有段落会挤成一坨。模板里用的是转义输出，所以这里安全。 */
+  white-space: pre-wrap;
 }
 
 .gallery-title {

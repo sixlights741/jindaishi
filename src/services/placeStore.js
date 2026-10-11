@@ -1,6 +1,6 @@
-const fs = require("fs");
 const path = require("path");
 const { repairMojibakeText } = require("./uploadedFileName");
+const { readJsonFile, writeJsonFile } = require("./jsonFile");
 
 const placesPath = path.join(__dirname, "../../data/places.json");
 
@@ -22,7 +22,7 @@ function toStoredPlace(place) {
 }
 
 function writePlaces(places) {
-  fs.writeFileSync(placesPath, JSON.stringify(places.map(toStoredPlace), null, 2), "utf-8");
+  writeJsonFile(placesPath, places.map(toStoredPlace));
 }
 
 // 读取时统一结构：补齐 videoUrls；
@@ -41,13 +41,8 @@ function toViewPlace(place) {
 }
 
 function getPlaces() {
-  try {
-    const raw = fs.readFileSync(placesPath, "utf-8");
-    const data = JSON.parse(raw);
-    return Array.isArray(data) ? data.map(toViewPlace) : [];
-  } catch (error) {
-    return [];
-  }
+  const data = readJsonFile(placesPath, []);
+  return Array.isArray(data) ? data.map(toViewPlace) : [];
 }
 
 function getPlaceById(id) {

@@ -1,24 +1,12 @@
 const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcryptjs");
+const { readJsonFile, writeJsonFile } = require("./jsonFile");
 
 const dataDir = path.join(__dirname, "../../data");
 const usersPath = path.join(dataDir, "users.json");
 const studentIdsPath = path.join(dataDir, "student_ids.json");
 const adminIdsPath = path.join(dataDir, "admin_ids.json");
-
-function readJson(filePath, fallback) {
-  try {
-    const raw = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(raw);
-  } catch (error) {
-    return fallback;
-  }
-}
-
-function writeJson(filePath, content) {
-  fs.writeFileSync(filePath, JSON.stringify(content, null, 2), "utf-8");
-}
 
 function ensureUserFile() {
   if (!fs.existsSync(dataDir)) {
@@ -27,25 +15,25 @@ function ensureUserFile() {
 
   if (!fs.existsSync(usersPath)) {
     const seededUsers = seedFromStudentIds();
-    writeJson(usersPath, seededUsers);
+    writeJsonFile(usersPath, seededUsers);
     return;
   }
 
-  const users = readJson(usersPath, []);
+  const users = readJsonFile(usersPath, []);
   if (!Array.isArray(users) || users.length === 0) {
     const seededUsers = seedFromStudentIds();
-    writeJson(usersPath, seededUsers);
+    writeJsonFile(usersPath, seededUsers);
     return;
   }
 
   const syncedUsers = syncUsersWithStudentIds(users);
   if (syncedUsers.changed) {
-    writeJson(usersPath, syncedUsers.users);
+    writeJsonFile(usersPath, syncedUsers.users);
   }
 }
 
 function syncUsersWithStudentIds(existingUsers) {
-  const ids = readJson(studentIdsPath, []).map((item) => String(item).trim()).filter(Boolean);
+  const ids = readJsonFile(studentIdsPath, []).map((item) => String(item).trim()).filter(Boolean);
   const existingMap = new Map(
     existingUsers
       .filter((item) => item && item.studentId)
@@ -72,8 +60,8 @@ function syncUsersWithStudentIds(existingUsers) {
 }
 
 function seedFromStudentIds() {
-  const ids = readJson(studentIdsPath, ["20230001", "20230002", "20230003"]);
-  const adminIds = readJson(adminIdsPath, ["20230001"]).map((item) => String(item).trim());
+  const ids = readJsonFile(studentIdsPath, ["20230001", "20230002", "20230003"]);
+  const adminIds = readJsonFile(adminIdsPath, ["20230001"]).map((item) => String(item).trim());
   return ids.map((studentId) => {
     const sid = String(studentId).trim();
     return {
@@ -86,11 +74,11 @@ function seedFromStudentIds() {
 }
 
 function getUsers() {
-  return readJson(usersPath, []);
+  return readJsonFile(usersPath, []);
 }
 
 function getStudentIds() {
-  return readJson(studentIdsPath, []).map((item) => String(item).trim()).filter(Boolean);
+  return readJsonFile(studentIdsPath, []).map((item) => String(item).trim()).filter(Boolean);
 }
 
 function ensureStudentUserExists(studentId) {
@@ -117,12 +105,12 @@ function ensureStudentUserExists(studentId) {
   };
 
   users.push(newUser);
-  writeJson(usersPath, users);
+  writeJsonFile(usersPath, users);
   return newUser;
 }
 
 function getAdminIds() {
-  return readJson(adminIdsPath, ["20230001"]).map((item) => String(item).trim());
+  return readJsonFile(adminIdsPath, ["20230001"]).map((item) => String(item).trim());
 }
 
 function getUserByStudentId(studentId) {
@@ -164,7 +152,7 @@ async function updatePassword(studentId, newPassword) {
 
   users[index].passwordHash = await bcrypt.hash(newPassword, 10);
   users[index].mustChangePassword = false;
-  writeJson(usersPath, users);
+  writeJsonFile(usersPath, users);
 }
 
 module.exports = {
