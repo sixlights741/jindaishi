@@ -69,6 +69,7 @@ npm run start
 - 详细操作手册：`docs/维护与素材接入手册.md`
 - 图片目录说明：`public/images/README.md`
 - 换电脑继续开发：`docs/新电脑开发交接文档.md`（环境搭建、仓库里有什么/没什么、部署与更新的坑）
+- Git / GitHub 操作与两台电脑同步：`docs/GitHub使用与同步指南.md`（认证配置、pull/push 流程、常见报错）
 
 ### 管理员后台入口
 - 路径：`/admin`
