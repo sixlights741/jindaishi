@@ -25,17 +25,36 @@ function writePlaces(places) {
   writeJsonFile(placesPath, places.map(toStoredPlace));
 }
 
-// 读取时统一结构：补齐 videoUrls；
-// 早期版本把中文文件名按 latin1 存成了乱码说明，这里一并还原，页面不再显示乱码。
-// （还原结果会在管理员下次保存该地点时写回文件。）
+// 每张图只有一个自由文字字段 note（想写什么写什么，不要求格式）。
+// 历史数据里是 caption（说明）与 credit（署名）两个字段，这里合并成一条 note；
+// 管理员下次保存该地点时按新格式写回，旧字段自然消失。
+function combineDrawingNote(item) {
+  const caption = repairMojibakeText(item.caption || "").trim();
+  const credit = String(item.credit || "").trim();
+  if (caption && credit && caption !== credit) {
+    return `${caption}（${credit}）`;
+  }
+  return caption || credit;
+}
+
+// 读取时统一结构：
+//   补齐 videoUrls；
+//   手绘图把 caption/credit 合并成 note（并修掉早期版本误存的中文乱码说明）；
+//   丢弃旧的 caption / credit，避免两套字段并存时再次被覆盖。
 function toViewPlace(place) {
   if (!place || typeof place !== "object") {
     return place;
   }
   const drawings = Array.isArray(place.drawings)
-    ? place.drawings.map((item) =>
-        item && typeof item === "object" ? { ...item, caption: repairMojibakeText(item.caption) } : item
-      )
+    ? place.drawings.map((item) => {
+        if (!item || typeof item !== "object") {
+          return item;
+        }
+        const { caption, credit, ...rest } = item;
+        // 已经是新格式（有 note）就直接用，否则由旧字段合并
+        const note = typeof item.note === "string" && item.note ? item.note : combineDrawingNote(item);
+        return { ...rest, note };
+      })
     : place.drawings;
   return { ...place, drawings, videoUrls: normalizeVideoUrls(place) };
 }

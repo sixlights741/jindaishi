@@ -271,51 +271,49 @@ function requirePasswordChanged(req, res, next) {
   return next();
 }
 
-function parseDrawings(rawText) {
+// 每张图只有一个自由文字字段 note（想写什么写什么，不要求格式）。
+// caption/credit -> note 的合并放在 placeStore.toViewPlace 里，那是所有读取的必经之路。
+//
+// drawingsText 只存 URL，一行一个 —— 文字不放在这里。
+// 文字由后台的逐图输入框按数组下标另外提交（见 mergeUploadedDrawings）。
+// 之所以拆开：文字是自由文本、允许换行，如果和 URL 挤在同一个换行分隔的字段里，
+// 文字里的换行就会被当成「下一张图」，一张图会被拆成两张。
+function parseDrawingUrls(rawText) {
   if (!rawText || !rawText.trim()) {
     return [];
   }
-
   return rawText
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
+    // 兼容历史上 "url | 文字" 的旧格式：只取竖线前的部分
     .map((line) => {
-      // 格式：url | 说明 | 署名（署名可省略，历史数据只有 url | 说明）
-      // 说明里带竖线时会被当成第三段，所以这里只按前两个竖线切分、其余并入署名
-      const parts = line.split("|");
-      const url = (parts[0] || "").trim();
-      const caption = parts.length > 1 ? (parts[1] || "").trim() : "";
-      const credit = parts.length > 2 ? parts.slice(2).join("|").trim() : "";
-      return { url, caption, credit };
+      const separator = line.indexOf("|");
+      return (separator === -1 ? line : line.slice(0, separator)).trim();
     })
-    .filter((item) => item.url);
+    .filter(Boolean);
 }
 
-// 三列都要写上：drawingsText 是表单提交时手绘图列表的载体，
-// 少写一列就会在下次保存时被覆盖成空（署名曾因为漏了第三列而丢失）。
+// 由 URL 列表构造 drawings；若给了按序的文字数组，就按下标配上
+function buildDrawings(urls, notes) {
+  const list = Array.isArray(notes) ? notes : [];
+  return urls.map((url, index) => ({
+    url,
+    note: list[index] !== undefined ? list[index] : "",
+  }));
+}
+
+// 隐藏字段只放 URL，一行一个
 function drawingsToText(drawings) {
   if (!Array.isArray(drawings) || drawings.length === 0) {
     return "";
   }
-  return drawings.map((item) => `${item.url} | ${item.caption || ""} | ${item.credit || ""}`).join("\n");
+  return drawings.map((item) => item.url).join("\n");
 }
 
-// 编辑页把手绘图说明回填进说明框，一行一张，行号与画廊顺序一致
-function drawingsToCaptionLines(drawings) {
-  if (!Array.isArray(drawings) || drawings.length === 0) {
-    return "";
-  }
-  return drawings.map((item) => item.caption || "").join("\n");
-}
-
-// 后台逐图输入框用的回填数组：顺序与画廊一致，下标即第几张图
-function drawingsToCaptionArray(drawings) {
-  return Array.isArray(drawings) ? drawings.map((item) => item.caption || "") : [];
-}
-
-function drawingsToCreditArray(drawings) {
-  return Array.isArray(drawings) ? drawings.map((item) => item.credit || "") : [];
+// 逐图输入框用的回填数组：顺序与画廊一致，下标即第几张图
+function drawingsToNoteArray(drawings) {
+  return Array.isArray(drawings) ? drawings.map((item) => item.note || "") : [];
 }
 
 function parseQaRules(rawText) {
@@ -358,22 +356,11 @@ function parseVideoUrls(rawText) {
     .filter(Boolean);
 }
 
-function parseCaptionLines(rawText) {
-  if (!rawText || !rawText.trim()) {
-    return [];
-  }
-  const lines = rawText.split(/\r?\n/).map((line) => line.trim());
-  // 末尾的换行不带内容，直接忽略；中间的空行表示该张图不写说明
-  while (lines.length > 0 && !lines[lines.length - 1]) {
-    lines.pop();
-  }
-  return lines;
-}
 
-// 后台每张图旁边有两个独立输入框（说明 / 署名），同名控件会提交成数组。
+// 后台每张图旁边有一个自由文字输入框（name="drawingNotes"），同名控件会提交成数组。
 // 单张图时浏览器只提交一个字符串而非数组，这里统一成数组。
 // 末尾的空值要保留：它代表「这张图暂时不填」，而不是「这一项不存在」，
-// 否则后面几张图的说明会整体错位到前一张上。
+// 否则后面几张图的文字会整体错位到前一张上。
 function toFieldList(value) {
   if (value === undefined || value === null) {
     return [];
@@ -387,45 +374,30 @@ function toFieldList(value) {
   return list;
 }
 
-// 说明框按行对应画廊里的第 1、2、3 张图：已有手绘图在前，本次新上传的追加在后。
-// 行数比图片少时，多出来的图保持原说明（新图用文件名兜底）；某行为空则表示这张图不写说明。
-//
-// 第二个参数起支持后台新的「逐图输入框」写法：captions / credits 都是按图片下标对齐的数组，
-// 与图片数量一一对应，不存在数错行的问题。两个都为空时退回原来的多行文本框逻辑。
-function mergeUploadedDrawings(drawingsText, uploadedFiles, captionText, captions, credits) {
-  const baseDrawings = parseDrawings(drawingsText || "");
+// 由「已有图的 URL 列表 + 本次新上传的文件 + 按序的文字数组」组装最终的 drawings。
+// 文字按下标对应页面上的第 1、2、3 张图（已有图在前、新上传追加在后，与页面一致），
+// 所以不存在数错行的问题；留空表示这张图不写文字。
+function mergeUploadedDrawings(drawingsText, uploadedFiles, notes) {
+  const baseUrls = parseDrawingUrls(drawingsText || "");
   const files = Array.isArray(uploadedFiles) ? uploadedFiles : [];
-  const uploadedDrawings = files.map((file, index) => ({
-    url: `/uploads/${file.filename}`,
-    caption: captionFromUploadedFile(file, baseDrawings.length + index),
-  }));
-  const drawings = [...baseDrawings, ...uploadedDrawings];
+  const uploadedUrls = files.map((file) => `/uploads/${file.filename}`);
+  const urls = [...baseUrls, ...uploadedUrls];
 
-  const captionList = toFieldList(captions);
-  const creditList = toFieldList(credits);
-  const legacyCaptions = captionList.length === 0 ? parseCaptionLines(captionText || "") : [];
-
-  // 逐图输入框（新写法）优先；一个都没填时用旧的多行文本框
-  const useFields = captionList.length > 0 || creditList.length > 0;
-  if (!useFields && legacyCaptions.length === 0) {
-    return drawings;
+  const noteList = toFieldList(notes);
+  if (noteList.length === 0) {
+    // 没提交任何文字：新上传的图用文件名兜底，已有图保持为空
+    return urls.map((url, index) => ({
+      url,
+      note: index >= baseUrls.length && files[index - baseUrls.length]
+        ? captionFromUploadedFile(files[index - baseUrls.length], index)
+        : "",
+    }));
   }
 
-  return drawings.map((item, index) => {
-    const next = { ...item };
-    if (useFields) {
-      // 只有这一张图真的填了内容才覆盖，留空的保持原值（新图则保留文件名兜底）
-      if (captionList[index]) {
-        next.caption = captionList[index];
-      }
-      if (creditList[index]) {
-        next.credit = creditList[index];
-      }
-    } else if (index < legacyCaptions.length) {
-      next.caption = legacyCaptions[index];
-    }
-    return next;
-  });
+  return urls.map((url, index) => ({
+    url,
+    note: noteList[index] !== undefined ? noteList[index] : "",
+  }));
 }
 
 function normalizePlaceFromBody(body) {
@@ -442,7 +414,7 @@ function normalizePlaceFromBody(body) {
     imageCaption: (body.imageCaption || "").trim(),
     imageCredit: (body.imageCredit || "").trim(),
     videoUrls: parseVideoUrls(body.videoUrls || ""),
-    drawings: parseDrawings(body.drawingsText || ""),
+    drawings: [],
     qaRules: parseQaRules(body.qaRulesText || ""),
   };
 }
@@ -466,13 +438,13 @@ function validatePlace(place, isCreate) {
 function buildLocalAssistantAnswer(place, question) {
   const normalized = (question || "").trim().toLowerCase();
   const drawingCount = Array.isArray(place.drawings) ? place.drawings.length : 0;
-  const firstDrawingCaption = drawingCount > 0 ? (place.drawings[0].caption || "暂无说明") : null;
+  const firstDrawingNote = drawingCount > 0 ? (place.drawings[0].note || "暂无说明") : null;
 
   if (!normalized) {
     return `这是“${place.name}”。它属于 ${place.period} 时期。你可以问我：历史背景、主要功能、手绘图看点。`;
   }
 
-  // 问作者/署名的必须先判：否则「这图谁画的」会先命中下面的「图」分支，永远答不到作者
+  // 问到作者/署名/谁做的：把每张图的文字列出来（现在文字是自由内容，作者信息通常写在里面）
   if (
     normalized.includes("谁") || normalized.includes("作者") || normalized.includes("署名") ||
     normalized.includes("哪一届") || normalized.includes("哪届") || normalized.includes("专业") ||
@@ -483,14 +455,14 @@ function buildLocalAssistantAnswer(place, question) {
       credited.push(`主图：${place.imageCredit}`);
     }
     (place.drawings || []).forEach((item, index) => {
-      if (item.credit) {
-        credited.push(`第 ${index + 1} 张${item.caption ? `（${item.caption}）` : ""}：${item.credit}`);
+      if (item.note) {
+        credited.push(`第 ${index + 1} 张：${item.note}`);
       }
     });
     if (credited.length === 0) {
-      return `${place.name} 的图片暂时还没有登记作者署名。`;
+      return `${place.name} 的图片暂时还没有填写文字说明。`;
     }
-    return `${place.name} 的图片署名如下：${credited.join("；")}。`;
+    return `${place.name} 的图片说明如下：${credited.join("；")}。`;
   }
 
   if (normalized.includes("手绘") || normalized.includes("图") || normalized.includes("draw")) {
@@ -505,7 +477,7 @@ function buildLocalAssistantAnswer(place, question) {
       .slice(1) // 去掉“手绘图共 N 张”那行标题，避免与下面的话重复
       .map((line) => line.trim())
       .join("；");
-    return `${place.name} 目前有 ${drawingCount} 张手绘图。${detail}。第一张说明是：${firstDrawingCaption}。`;
+    return `${place.name} 目前有 ${drawingCount} 张手绘图。${detail}。`;
   }
 
   if (normalized.includes("时间") || normalized.includes("时期") || normalized.includes("年代")) {
@@ -551,10 +523,7 @@ function formatImageFacts(place) {
   if (drawings.length > 0) {
     lines.push(`手绘图共 ${drawings.length} 张：`);
     drawings.forEach((item, index) => {
-      const bits = [];
-      if (item.caption) bits.push(`说明：${item.caption}`);
-      if (item.credit) bits.push(`作者：${item.credit}`);
-      lines.push(`  第 ${index + 1} 张${bits.length ? `（${bits.join("，")}）` : "（暂无说明与署名）"}`);
+      lines.push(`  第 ${index + 1} 张${item.note ? `（${item.note}）` : "（暂无文字）"}`);
     });
   }
 
@@ -957,7 +926,6 @@ app.get("/admin/place/new", requireAuth, requireAdmin, (req, res) => {
       image: "",
       videoUrls: [],
       drawingsText: "",
-      drawingsCaptions: "",
       qaRulesText: "",
     },
     error: null,
@@ -977,15 +945,13 @@ app.post("/admin/place/new", requireAuth, requireAdmin, upload.fields([
       place: {
         ...normalizePlaceFromBody(req.body),
         image: "",
-        drawings: parseDrawings(req.body.drawingsText || ""),
+        drawings: [],
         drawingsText: req.body.drawingsText || "",
-        drawingsCaptions: req.body.drawingsCaptions || "",
 
         // 逐图输入框带回填：下标与画廊顺序一致
 
-        drawingCaptions: toFieldList(req.body.drawingCaptions),
+        drawingNotes: toFieldList(req.body.drawingNotes),
 
-        drawingCredits: toFieldList(req.body.drawingCredits),
         qaRulesText: req.body.qaRulesText || "",
       },
       error: uploadError,
@@ -1000,9 +966,7 @@ app.post("/admin/place/new", requireAuth, requireAdmin, upload.fields([
   place.drawings = mergeUploadedDrawings(
     req.body.drawingsText,
     req.files?.drawingFiles,
-    req.body.drawingsCaptions,
-    req.body.drawingCaptions,
-    req.body.drawingCredits
+    req.body.drawingNotes
   );
   const error = validatePlace(place, true);
   if (error) {
@@ -1012,13 +976,11 @@ app.post("/admin/place/new", requireAuth, requireAdmin, upload.fields([
       place: {
         ...place,
         drawingsText: req.body.drawingsText || "",
-        drawingsCaptions: req.body.drawingsCaptions || "",
 
         // 逐图输入框带回填：下标与画廊顺序一致
 
-        drawingCaptions: toFieldList(req.body.drawingCaptions),
+        drawingNotes: toFieldList(req.body.drawingNotes),
 
-        drawingCredits: toFieldList(req.body.drawingCredits),
         qaRulesText: req.body.qaRulesText || "",
       },
       error,
@@ -1032,13 +994,11 @@ app.post("/admin/place/new", requireAuth, requireAdmin, upload.fields([
       place: {
         ...place,
         drawingsText: req.body.drawingsText || "",
-        drawingsCaptions: req.body.drawingsCaptions || "",
 
         // 逐图输入框带回填：下标与画廊顺序一致
 
-        drawingCaptions: toFieldList(req.body.drawingCaptions),
+        drawingNotes: toFieldList(req.body.drawingNotes),
 
-        drawingCredits: toFieldList(req.body.drawingCredits),
         qaRulesText: req.body.qaRulesText || "",
       },
       error: "地点 ID 已存在，请更换",
@@ -1063,9 +1023,7 @@ app.get("/admin/place/:id/edit", requireAuth, requireAdmin, (req, res) => {
       imageCaption: place.imageCaption || "",
       imageCredit: place.imageCredit || "",
       drawingsText: drawingsToText(place.drawings),
-      drawingsCaptions: drawingsToCaptionLines(place.drawings),
-      drawingCaptions: drawingsToCaptionArray(place.drawings),
-      drawingCredits: drawingsToCreditArray(place.drawings),
+      drawingNotes: drawingsToNoteArray(place.drawings),
       qaRulesText: qaRulesToText(place.qaRules),
     },
     error: null,
@@ -1093,13 +1051,11 @@ app.post("/admin/place/:id/edit", requireAuth, requireAdmin, upload.fields([
         image: existing.image || "",
         drawings: existing.drawings || [],
         drawingsText: req.body.drawingsText || "",
-        drawingsCaptions: req.body.drawingsCaptions || "",
 
         // 逐图输入框带回填：下标与画廊顺序一致
 
-        drawingCaptions: toFieldList(req.body.drawingCaptions),
+        drawingNotes: toFieldList(req.body.drawingNotes),
 
-        drawingCredits: toFieldList(req.body.drawingCredits),
         qaRulesText: req.body.qaRulesText || "",
       },
       error: uploadError,
@@ -1120,9 +1076,7 @@ app.post("/admin/place/:id/edit", requireAuth, requireAdmin, upload.fields([
   payload.drawings = mergeUploadedDrawings(
     req.body.drawingsText,
     req.files?.drawingFiles,
-    req.body.drawingsCaptions,
-    req.body.drawingCaptions,
-    req.body.drawingCredits
+    req.body.drawingNotes
   );
   if (!payload.drawings || payload.drawings.length === 0) {
     payload.drawings = existing.drawings || [];
@@ -1135,13 +1089,11 @@ app.post("/admin/place/:id/edit", requireAuth, requireAdmin, upload.fields([
       place: {
         ...payload,
         drawingsText: req.body.drawingsText || "",
-        drawingsCaptions: req.body.drawingsCaptions || "",
 
         // 逐图输入框带回填：下标与画廊顺序一致
 
-        drawingCaptions: toFieldList(req.body.drawingCaptions),
+        drawingNotes: toFieldList(req.body.drawingNotes),
 
-        drawingCredits: toFieldList(req.body.drawingCredits),
         qaRulesText: req.body.qaRulesText || "",
       },
       error,

@@ -121,10 +121,6 @@
         <label>手绘图上传 (可多选)</label>
         <input type="file" name="drawingFiles" id="drawingFilesInput" accept="image/*" multiple style="color:#fff;" />
         <input type="hidden" name="drawingsText" id="drawingsTextInput" value="<%= place.drawingsText || '' %>" />
-        <!-- 历史遗留的「按行对应」说明文本框：不显示，仅作为旧版提交格式的兼容载体。
-             逐图输入框一旦有内容就会写进上面的 drawingsText，并把这个框清空，
-             避免两套数据同时提交时互相覆盖。 -->
-        <textarea name="drawingsCaptions" id="drawingsCaptionsInput" style="display:none;"><%= place.drawingsCaptions || '' %></textarea>
         <div class="preview-box">
           <p class="hint" style="margin-top:0;">手绘图预览与逐图说明</p>
           <p class="hint">每张图下面就是它自己的说明和署名框，顺序即详情页画廊顺序。新上传的图会先显示文件名占位，等你填写。</p>
@@ -196,9 +192,7 @@
       const mainImageHint = document.getElementById("mainImageHint");
   const imageFileInput = document.getElementById("imageFileInput");
   const drawingFilesInput = document.getElementById("drawingFilesInput");
-  const drawingsTextInput = document.getElementById("drawingsTextInput");
-  const drawingsCaptionsInput = document.getElementById("drawingsCaptionsInput");
-  const drawingsPreviewGrid = document.getElementById("drawingsPreviewGrid");
+  const drawingsTextInput = document.getElementById("drawingsTextInput");  const drawingsPreviewGrid = document.getElementById("drawingsPreviewGrid");
       const drawingsEmptyHint = document.getElementById("drawingsEmptyHint");
   const drawingInputsContainer = document.getElementById("drawingInputsContainer");
   const deleteMainImageBtn = document.getElementById('deleteMainImageBtn');
@@ -210,13 +204,21 @@
   const MAX_UPLOAD_MB = 20;
   const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
-      // "url | 说明 | 署名"；第三列可省略（历史数据只有前两列）
+      // 隐藏字段 drawingsText 只存 URL，一行一个（文字走逐图输入框 drawingNotes）。
+      // 兼容历史上 "url | 文字" 的旧格式：只取竖线前的部分。
       function normalizeLine(line) {
-        const parts = line.split("|");
-        const url = (parts[0] || "").trim();
-        const caption = (parts[1] || "").trim();
-        const credit = parts.length > 2 ? parts.slice(2).join("|").trim() : "";
-        return { url, caption, credit };
+        const sep = line.indexOf("|");
+        return { url: (sep === -1 ? line : line.slice(0, sep)).trim() };
+      }
+
+      // 取一张图的文字：新格式直接读 note，顺带兼容可能残留的旧字段
+      function noteOf(d) {
+        if (!d) return "";
+        if (d.note) return String(d.note);
+        const caption = String(d.caption || "").trim();
+        const credit = String(d.credit || "").trim();
+        if (caption && credit && caption !== credit) return caption + "（" + credit + "）";
+        return caption || credit;
       }
 
       function setMainPreview(overrideUrl) {
@@ -245,10 +247,14 @@
       // 画廊的唯一数据源：渲染、填写、删除都基于它，避免从 DOM 反复重建导致输入丢失
       let drawingItems = [];
 
+      // 服务端回填的逐图文字：下标与画廊顺序一致。
+      // 文字不放在隐藏字段里（自由文本可含换行，会与逐行分隔的 URL 冲突），
+      // 所以由这里注入，提交时再按同名数组 drawingNotes 发回去。
+      var initialNotes = <%- JSON.stringify(Array.isArray(place.drawingNotes) ? place.drawingNotes : []) %>;
+
       // 把「已有手绘图」和「本次新上传」按最终保存顺序合并：
       // 已有图按下标占位，新图追加在后；删除中间一张后索引会重新写回，不会错位。
-      // normalizeLine 会从 "url | 说明 | 署名" 三列里把署名一起解析出来，
-      // 漏掉它就会在首次渲染时把已有署名清空。
+      // 文字来源优先级：本次已填（syncDrawingItems 继承） > 服务端回填值。
       function buildDrawingItems() {
         const fromText = (drawingsTextInput.value || "")
           .split("\n")
@@ -259,16 +265,14 @@
           .map((item, index) => ({
             index: String(index),
             url: item.url,
-            caption: item.caption || "",
-            credit: item.credit || "",
+            note: initialNotes[index] || "",
             isUpload: false,
           }));
 
         const uploads = pendingUploads.map((file) => ({
           index: "u" + file.seq,
           url: file.dataUrl,
-          caption: "",
-          credit: "",
+          note: "",
           isUpload: true,
           name: file.name,
         }));
@@ -285,12 +289,13 @@
         const built = buildDrawingItems();
         drawingItems = built.map((item) => {
           const prev = drawingItems.find((p) => p.index === item.index);
-          return prev ? { ...item, caption: prev.caption, credit: prev.credit } : item;
+          return prev ? { ...item, note: prev.note } : item;
         });
         return drawingItems;
       }
 
-      // 逐图输入框：以 index 为键与图片对应，服务端按下标对齐，不存在数错行的问题
+      // 逐图文字框：一张图一个框，内容随你写（说明、作者、日期都可以），不要求格式。
+      // 以 index 为键与图片对应，服务端按下标对齐，不存在数错行的问题。
       function renderDrawingInputs(items) {
         if (!drawingInputsContainer) return;
         drawingInputsContainer.innerHTML = "";
@@ -299,68 +304,47 @@
         const wrap = document.createElement("div");
         wrap.className = "form-group";
         const title = document.createElement("label");
-        title.textContent = "手绘图的说明与署名";
+        title.textContent = "每张图的文字说明";
         wrap.appendChild(title);
 
         const hint = document.createElement("p");
         hint.className = "hint";
-        hint.textContent = "与上面的预览一一对应；留空表示这张图暂时不填。署名建议写成「2023级 建筑学 张三」。";
+        hint.textContent = "与上面的预览一一对应，想写什么就写什么（内容、作者、日期都行），字数不限；留空表示这张图不写文字。";
         wrap.appendChild(hint);
 
         items.forEach((item, index) => {
           const row = document.createElement("div");
-          row.style.cssText = "display:flex; gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap;";
+          row.style.cssText = "display:flex; gap:8px; margin-top:8px; align-items:flex-start; flex-wrap:wrap;";
 
           const tag = document.createElement("span");
           tag.textContent = `第 ${index + 1} 张`;
-          tag.style.cssText = "color:#9ad; font-size:12px; min-width:60px;";
+          tag.style.cssText = "color:#9ad; font-size:12px; min-width:60px; padding-top:9px;";
           row.appendChild(tag);
 
-          const captionInput = document.createElement("input");
-          captionInput.type = "text";
-          captionInput.name = "drawingCaptions";
-          captionInput.className = "drawing-caption-input";
-          captionInput.placeholder = "说明（线稿 / 彩绘 / 作品 1）";
-          captionInput.value = item.caption || "";
-          captionInput.style.cssText = "flex:1 1 200px; min-width:160px;";
-
-          const creditInput = document.createElement("input");
-          creditInput.type = "text";
-          creditInput.name = "drawingCredits";
-          creditInput.className = "drawing-credit-input";
-          creditInput.placeholder = "署名（2023级 建筑学 张三）";
-          creditInput.value = item.credit || "";
-          creditInput.style.cssText = "flex:1 1 220px; min-width:180px;";
+          // 用 textarea：便于写多行、较长的一句话
+          const noteInput = document.createElement("textarea");
+          noteInput.name = "drawingNotes";
+          noteInput.className = "drawing-note-input";
+          noteInput.rows = 2;
+          noteInput.placeholder = "这张图的文字说明，例如：线稿，2023级建筑学张三绘于2026年";
+          noteInput.value = item.note || "";
+          noteInput.style.cssText = "flex:1 1 320px; min-width:200px; resize:vertical;";
 
           // 打字时写回数据源（不重新渲染，否则输入框会失焦），并同步预览文字
-          captionInput.addEventListener("input", () => {
-            item.caption = captionInput.value;
-            clearLegacyCaptionBox();
-            const p = drawingsPreviewGrid.querySelector(`.drawing-caption[data-index="${index}"]`);
+          noteInput.addEventListener("input", () => {
+            item.note = noteInput.value;            const p = drawingsPreviewGrid.querySelector(`.drawing-caption[data-index="${index}"]`);
             if (p) {
-              p.textContent = `第 ${index + 1} 张：${captionInput.value.trim() || item.name || "（未填说明）"}`;
+              const text = noteInput.value.trim();
+              p.textContent = `第 ${index + 1} 张：${text || item.name || "（未填文字）"}`;
             }
           });
-          creditInput.addEventListener("input", () => {
-            item.credit = creditInput.value;
-            clearLegacyCaptionBox();
-          });
 
-          row.appendChild(captionInput);
-          row.appendChild(creditInput);
+          row.appendChild(noteInput);
           wrap.appendChild(row);
         });
 
         drawingInputsContainer.appendChild(wrap);
       }
-
-      // 旧的「按行对应」文本框一旦与新输入框并存，就会互相覆盖，所以用到新框时清掉它
-      function clearLegacyCaptionBox() {
-        if (drawingsCaptionsInput && drawingsCaptionsInput.value) {
-          drawingsCaptionsInput.value = "";
-        }
-      }
-
       function renderDrawingsPreview() {
         const allItems = syncDrawingItems();
 
@@ -375,7 +359,7 @@
         drawingsEmptyHint.style.display = "none";
 
         allItems.forEach((item, index) => {
-          const shownCaption = (item.caption || "").trim() || (item.isUpload ? item.name : "（未填说明）");
+          const shownNote = (item.note || "").trim() || (item.isUpload ? item.name : "（未填文字）");
 
           const card = document.createElement("div");
           card.style.background = "#222";
@@ -384,7 +368,7 @@
 
           const img = document.createElement("img");
           img.src = item.url;
-          img.alt = shownCaption;
+          img.alt = shownNote;
 
           const caption = document.createElement("p");
           caption.className = "drawing-caption";
@@ -392,12 +376,12 @@
           caption.style.fontSize = "12px";
           caption.style.color = "#ccc";
           caption.style.margin = "5px 0";
-          caption.textContent = `第 ${index + 1} 张：${shownCaption}`;
+          caption.textContent = `第 ${index + 1} 张：${shownNote}`;
 
           card.appendChild(img);
           card.appendChild(caption);
 
-          // If this item is an existing drawing (not newly uploaded preview), render a delete button
+          // 已有图（非本次新上传）才有删除按钮
           if (!item.isUpload && item.url) {
             const del = document.createElement('button');
             del.type = 'button';
@@ -415,18 +399,14 @@
                 const data = await res.json();
                 if (data && data.success) {
                   // 服务端已删除该条记录：用返回的列表重建隐藏字段与数据源。
-                  // 逐图输入框带 name 会随表单提交，所以必须一起重建，
-                  // 否则会把刚删掉那张的说明又提交回去。
+                  // 逐图文字框带 name 会随表单提交，所以必须一起重建，
+                  // 否则会把刚删掉那张的文字又提交回去。
                   const remaining = (data.place && Array.isArray(data.place.drawings)) ? data.place.drawings : [];
-                  drawingsTextInput.value = remaining.map((d) => `${d.url} | ${d.caption || ''} | ${d.credit || ''}`).join('\n');
-                  if (drawingsCaptionsInput) {
-                    drawingsCaptionsInput.value = "";
-                  }
+                  drawingsTextInput.value = remaining.map((d) => d.url).join('\n');
                   drawingItems = remaining.map((d, i) => ({
                     index: String(i),
                     url: d.url,
-                    caption: d.caption || "",
-                    credit: d.credit || "",
+                    note: noteOf(d),
                     isUpload: false,
                   }));
                   renderDrawingsPreview();
@@ -601,9 +581,6 @@
         });
       }
       drawingsTextInput.addEventListener("input", renderDrawingsPreview);
-      if (drawingsCaptionsInput) {
-        drawingsCaptionsInput.addEventListener("input", renderDrawingsPreview);
-      }
       if (videoUrlsInput) {
         videoUrlsInput.addEventListener("input", renderVideoPreviews);
       }

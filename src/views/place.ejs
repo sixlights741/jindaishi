@@ -91,10 +91,9 @@
         <section class="drawing-grid">
           <% place.drawings.forEach((drawing) => { %>
             <article class="drawing-item">
-              <img src="<%= drawing.url %>" alt="<%= drawing.caption || (place.name + '手绘图') %>" />
-              <p><%= drawing.caption || '手绘图' %></p>
-              <% if (drawing.credit) { %>
-                <p class="drawing-credit"><%= drawing.credit %></p>
+              <img src="<%= drawing.url %>" alt="<%= drawing.note || (place.name + '手绘图') %>" data-note="<%= drawing.note || '' %>" />
+              <% if (drawing.note) { %>
+                <p class="drawing-note"><%= drawing.note %></p>
               <% } %>
             </article>
           <% }) %>
@@ -380,25 +379,13 @@
         });
       }
 
-      // 手绘图：第一行是说明，署名在 .drawing-credit 里
+      // 手绘图：每张图只有一段自由文字，放在 data-note 上
       var drawingItems = document.querySelectorAll(".drawing-item img");
       drawingItems.forEach(function (img) {
         img.addEventListener("click", function (e) {
           e.stopPropagation();
-          var caption = "";
-          var credit = "";
-          var drawingItem = img.closest(".drawing-item");
-          if (drawingItem) {
-            var captionEl = drawingItem.querySelector("p");
-            if (captionEl) {
-              caption = captionEl.textContent.trim();
-            }
-            var creditEl = drawingItem.querySelector(".drawing-credit");
-            if (creditEl) {
-              credit = creditEl.textContent.trim();
-            }
-          }
-          openLightbox(img.src, caption || img.alt, credit);
+          var note = img.getAttribute("data-note") || "";
+          openLightbox(img.src, note || img.alt, "");
         });
       });
 

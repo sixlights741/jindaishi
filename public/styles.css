@@ -1237,20 +1237,18 @@ button:hover::after,
   font-size: 14px;
 }
 
-/* 署名（届别 专业 姓名）：比说明低一级，靠上收紧间距，视觉上属于同一条说明 */
-.drawing-credit,
+/* 每张图的自由文字说明：后台是 textarea，可以写多行，这里保留换行 */
+.drawing-note {
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+/* 主图右上角的一行小字（可选） */
 .detail-image-credit {
   color: rgba(180, 208, 255, 0.88);
   font-size: 12.5px;
   letter-spacing: 0.3px;
   line-height: 1.5;
-}
-
-.drawing-credit {
-  margin: -6px 10px 10px !important;
-}
-
-.detail-image-credit {
   margin: 8px 2px 0;
   text-align: right;
 }
