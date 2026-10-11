@@ -91,6 +91,15 @@
         <input type="file" name="imageFile" id="imageFileInput" accept="image/*" style="color:#fff;" />
         <p class="hint">编辑时不选择则保留原图；新增时可不传</p>
         <input type="hidden" name="image" id="imageInput" value="<%= place.image %>" />
+        <div class="form-group" style="margin-top:12px; margin-bottom:0;">
+          <label>主图说明（可选）</label>
+          <input type="text" name="imageCaption" id="imageCaptionInput" value="<%= place.imageCaption || '' %>" placeholder="例如：线稿 / 彩绘 / 作品 1" />
+        </div>
+        <div class="form-group" style="margin-top:12px; margin-bottom:0;">
+          <label>主图署名（可选）</label>
+          <input type="text" name="imageCredit" id="imageCreditInput" value="<%= place.imageCredit || '' %>" placeholder="格式：届别 专业 姓名，例如 2023级 建筑学 张三" />
+          <p class="hint">建议统一写成「2023级 建筑学 张三」</p>
+        </div>
         <div class="preview-box">
           <p class="hint" id="mainImageHint" style="margin-top:0;">主图预览区域</p>
           <img id="mainImagePreview" src="" alt="主图预览" style="display:none;" />
@@ -112,17 +121,19 @@
         <label>手绘图上传 (可多选)</label>
         <input type="file" name="drawingFiles" id="drawingFilesInput" accept="image/*" multiple style="color:#fff;" />
         <input type="hidden" name="drawingsText" id="drawingsTextInput" value="<%= place.drawingsText || '' %>" />
+        <!-- 历史遗留的「按行对应」说明文本框：不显示，仅作为旧版提交格式的兼容载体。
+             逐图输入框一旦有内容就会写进上面的 drawingsText，并把这个框清空，
+             避免两套数据同时提交时互相覆盖。 -->
+        <textarea name="drawingsCaptions" id="drawingsCaptionsInput" style="display:none;"><%= place.drawingsCaptions || '' %></textarea>
         <div class="preview-box">
-          <p class="hint" id="drawingsEmptyHint" style="margin-top:0;">手绘图预览区域</p>
+          <p class="hint" style="margin-top:0;">手绘图预览与逐图说明</p>
+          <p class="hint">每张图下面就是它自己的说明和署名框，顺序即详情页画廊顺序。新上传的图会先显示文件名占位，等你填写。</p>
           <div id="drawingsPreviewGrid" class="drawings-grid"></div>
+          <p class="hint" id="drawingsEmptyHint" style="margin-top:10px;">还没有手绘图，选择文件后这里会出现每张图的填写框。</p>
         </div>
       </div>
 
-      <div class="form-group">
-        <label>手绘图说明 (可选)</label>
-        <textarea name="drawingsCaptions" id="drawingsCaptionsInput" rows="3" placeholder="每行一条，对应预览中的第 1、2、3 张图；该行留空则不写说明"><%= place.drawingsCaptions || '' %></textarea>
-        <p class="hint">第 1 行对应第 1 张图，以此类推；行数少于图片数时，其余图片保留原说明。</p>
-      </div>
+      <div id="drawingInputsContainer"></div>
 
       <div class="form-group">
         <label>小助手预设问答</label>
@@ -189,6 +200,7 @@
   const drawingsCaptionsInput = document.getElementById("drawingsCaptionsInput");
   const drawingsPreviewGrid = document.getElementById("drawingsPreviewGrid");
       const drawingsEmptyHint = document.getElementById("drawingsEmptyHint");
+  const drawingInputsContainer = document.getElementById("drawingInputsContainer");
   const deleteMainImageBtn = document.getElementById('deleteMainImageBtn');
   const videoUrlsInput = document.getElementById("videoUrlsInput");
   const videoPreviewGrid = document.getElementById("videoPreviewGrid");
@@ -198,11 +210,13 @@
   const MAX_UPLOAD_MB = 20;
   const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
+      // "url | 说明 | 署名"；第三列可省略（历史数据只有前两列）
       function normalizeLine(line) {
         const parts = line.split("|");
         const url = (parts[0] || "").trim();
         const caption = (parts[1] || "").trim();
-        return { url, caption };
+        const credit = parts.length > 2 ? parts.slice(2).join("|").trim() : "";
+        return { url, caption, credit };
       }
 
       function setMainPreview(overrideUrl) {
@@ -223,29 +237,135 @@
         deleteMainImageBtn.style.display = 'inline-block';
       }
 
-      function renderDrawingsPreview() {
-        const uploadedFiles = drawingFilesInput?.files ? Array.from(drawingFilesInput.files) : [];
-        const lines = (drawingsTextInput.value || "")
+      // 本次在文件框里选中的图：先把内容读成 dataURL 存下来，
+      // 即使之后因为校验失败重新渲染表单，预览和输入框也不会消失。
+      let pendingUploads = [];
+      // 递增计数值：每次读取新选中的文件后 +1，用来让过期的读取结果自行作废
+      let uploadsVersion = 0;
+      // 画廊的唯一数据源：渲染、填写、删除都基于它，避免从 DOM 反复重建导致输入丢失
+      let drawingItems = [];
+
+      // 把「已有手绘图」和「本次新上传」按最终保存顺序合并：
+      // 已有图按下标占位，新图追加在后；删除中间一张后索引会重新写回，不会错位。
+      // normalizeLine 会从 "url | 说明 | 署名" 三列里把署名一起解析出来，
+      // 漏掉它就会在首次渲染时把已有署名清空。
+      function buildDrawingItems() {
+        const fromText = (drawingsTextInput.value || "")
           .split("\n")
           .map((line) => line.trim())
-          .filter(Boolean);
-
-        const items = lines
+          .filter(Boolean)
           .map(normalizeLine)
-          .filter((item) => item.url);
+          .filter((item) => item.url)
+          .map((item, index) => ({
+            index: String(index),
+            url: item.url,
+            caption: item.caption || "",
+            credit: item.credit || "",
+            isUpload: false,
+          }));
 
-        const uploadedItems = uploadedFiles.map((file, index) => ({
-          url: URL.createObjectURL(file),
-          caption: file.name || `上传图 ${index + 1}`,
+        const uploads = pendingUploads.map((file) => ({
+          index: "u" + file.seq,
+          url: file.dataUrl,
+          caption: "",
+          credit: "",
           isUpload: true,
+          name: file.name,
         }));
 
-        // 已有手绘图在前、本次新上传的追加在后，与保存后的画廊顺序一致，
-        // 这样“手绘图说明”里的第 N 行就对应这里的第 N 张。
-        const allItems = [...items, ...uploadedItems];
-        const captionLines = (drawingsCaptionsInput?.value || "").split("\n");
+        return [...fromText, ...uploads].sort((a, b) => {
+          if (a.isUpload !== b.isUpload) return a.isUpload ? 1 : -1;
+          if (a.isUpload) return Number(a.index.slice(1)) - Number(b.index.slice(1));
+          return Number(a.index) - Number(b.index);
+        });
+      }
+
+      // 已有项保留已填内容，新项用解析出来的原始值补齐
+      function syncDrawingItems() {
+        const built = buildDrawingItems();
+        drawingItems = built.map((item) => {
+          const prev = drawingItems.find((p) => p.index === item.index);
+          return prev ? { ...item, caption: prev.caption, credit: prev.credit } : item;
+        });
+        return drawingItems;
+      }
+
+      // 逐图输入框：以 index 为键与图片对应，服务端按下标对齐，不存在数错行的问题
+      function renderDrawingInputs(items) {
+        if (!drawingInputsContainer) return;
+        drawingInputsContainer.innerHTML = "";
+        if (items.length === 0) return;
+
+        const wrap = document.createElement("div");
+        wrap.className = "form-group";
+        const title = document.createElement("label");
+        title.textContent = "手绘图的说明与署名";
+        wrap.appendChild(title);
+
+        const hint = document.createElement("p");
+        hint.className = "hint";
+        hint.textContent = "与上面的预览一一对应；留空表示这张图暂时不填。署名建议写成「2023级 建筑学 张三」。";
+        wrap.appendChild(hint);
+
+        items.forEach((item, index) => {
+          const row = document.createElement("div");
+          row.style.cssText = "display:flex; gap:8px; margin-top:8px; align-items:center; flex-wrap:wrap;";
+
+          const tag = document.createElement("span");
+          tag.textContent = `第 ${index + 1} 张`;
+          tag.style.cssText = "color:#9ad; font-size:12px; min-width:60px;";
+          row.appendChild(tag);
+
+          const captionInput = document.createElement("input");
+          captionInput.type = "text";
+          captionInput.name = "drawingCaptions";
+          captionInput.className = "drawing-caption-input";
+          captionInput.placeholder = "说明（线稿 / 彩绘 / 作品 1）";
+          captionInput.value = item.caption || "";
+          captionInput.style.cssText = "flex:1 1 200px; min-width:160px;";
+
+          const creditInput = document.createElement("input");
+          creditInput.type = "text";
+          creditInput.name = "drawingCredits";
+          creditInput.className = "drawing-credit-input";
+          creditInput.placeholder = "署名（2023级 建筑学 张三）";
+          creditInput.value = item.credit || "";
+          creditInput.style.cssText = "flex:1 1 220px; min-width:180px;";
+
+          // 打字时写回数据源（不重新渲染，否则输入框会失焦），并同步预览文字
+          captionInput.addEventListener("input", () => {
+            item.caption = captionInput.value;
+            clearLegacyCaptionBox();
+            const p = drawingsPreviewGrid.querySelector(`.drawing-caption[data-index="${index}"]`);
+            if (p) {
+              p.textContent = `第 ${index + 1} 张：${captionInput.value.trim() || item.name || "（未填说明）"}`;
+            }
+          });
+          creditInput.addEventListener("input", () => {
+            item.credit = creditInput.value;
+            clearLegacyCaptionBox();
+          });
+
+          row.appendChild(captionInput);
+          row.appendChild(creditInput);
+          wrap.appendChild(row);
+        });
+
+        drawingInputsContainer.appendChild(wrap);
+      }
+
+      // 旧的「按行对应」文本框一旦与新输入框并存，就会互相覆盖，所以用到新框时清掉它
+      function clearLegacyCaptionBox() {
+        if (drawingsCaptionsInput && drawingsCaptionsInput.value) {
+          drawingsCaptionsInput.value = "";
+        }
+      }
+
+      function renderDrawingsPreview() {
+        const allItems = syncDrawingItems();
 
         drawingsPreviewGrid.innerHTML = "";
+        renderDrawingInputs(allItems);
 
         if (allItems.length === 0) {
           drawingsEmptyHint.style.display = "block";
@@ -255,9 +375,7 @@
         drawingsEmptyHint.style.display = "none";
 
         allItems.forEach((item, index) => {
-          const typedCaption = index < captionLines.length ? captionLines[index].trim() : "";
-          // 说明框里写了的按写的显示，没写的显示原说明（新图则显示文件名）
-          const shownCaption = typedCaption || item.caption || (item.isUpload ? `上传图 ${index + 1}` : "手绘图");
+          const shownCaption = (item.caption || "").trim() || (item.isUpload ? item.name : "（未填说明）");
 
           const card = document.createElement("div");
           card.style.background = "#222";
@@ -269,6 +387,8 @@
           img.alt = shownCaption;
 
           const caption = document.createElement("p");
+          caption.className = "drawing-caption";
+          caption.dataset.index = String(index);
           caption.style.fontSize = "12px";
           caption.style.color = "#ccc";
           caption.style.margin = "5px 0";
@@ -294,19 +414,21 @@
                 });
                 const data = await res.json();
                 if (data && data.success) {
-                  // remove this card from DOM and update hidden drawingsText
-                  card.remove();
-                  // rebuild drawingsText from returned place.drawings
-                  const newText = (data.place && Array.isArray(data.place.drawings)) ? data.place.drawings.map(d => `${d.url} | ${d.caption || ''}`).join('\n') : '';
-                  drawingsTextInput.value = newText;
-                  // 同步删掉说明框里对应的一行，否则后面的说明会整体错位
+                  // 服务端已删除该条记录：用返回的列表重建隐藏字段与数据源。
+                  // 逐图输入框带 name 会随表单提交，所以必须一起重建，
+                  // 否则会把刚删掉那张的说明又提交回去。
+                  const remaining = (data.place && Array.isArray(data.place.drawings)) ? data.place.drawings : [];
+                  drawingsTextInput.value = remaining.map((d) => `${d.url} | ${d.caption || ''} | ${d.credit || ''}`).join('\n');
                   if (drawingsCaptionsInput) {
-                    const boxLines = (drawingsCaptionsInput.value || "").split("\n");
-                    if (index < boxLines.length) {
-                      boxLines.splice(index, 1);
-                      drawingsCaptionsInput.value = boxLines.join("\n");
-                    }
+                    drawingsCaptionsInput.value = "";
                   }
+                  drawingItems = remaining.map((d, i) => ({
+                    index: String(i),
+                    url: d.url,
+                    caption: d.caption || "",
+                    credit: d.credit || "",
+                    isUpload: false,
+                  }));
                   renderDrawingsPreview();
                   showNotice('手绘图已删除', 'success');
                 } else {
@@ -449,7 +571,33 @@
             renderDrawingsPreview();
             return;
           }
-          renderDrawingsPreview();
+          // 把选中的图读成 dataURL 存进 pendingUploads：这样即使提交后因为校验错误
+          // 重新渲染了整个表单，预览和填写框也不会丢。
+          const currentVersion = ++uploadsVersion;
+          pendingUploads = [];
+          if (files.length === 0) {
+            renderDrawingsPreview();
+            return;
+          }
+          let done = 0;
+          files.forEach((file, i) => {
+            const reader = new FileReader();
+            reader.addEventListener("load", () => {
+              done += 1;
+              // 期间用户又改了选择，这次读取结果作废
+              if (currentVersion !== uploadsVersion) return;
+              pendingUploads.push({ seq: i, name: file.name, dataUrl: String(reader.result || "") });
+              if (done === files.length) {
+                pendingUploads.sort((a, b) => a.seq - b.seq);
+                renderDrawingsPreview();
+              }
+            });
+            reader.addEventListener("error", () => {
+              done += 1;
+              if (done === files.length) renderDrawingsPreview();
+            });
+            reader.readAsDataURL(file);
+          });
         });
       }
       drawingsTextInput.addEventListener("input", renderDrawingsPreview);

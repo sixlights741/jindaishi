@@ -26,7 +26,16 @@
   <main class="detail-container">
     <article class="detail-card">
       <% if (place.image) { %>
-        <img src="<%= place.image %>" alt="<%= place.name %>" class="detail-image" />
+        <img
+          src="<%= place.image %>"
+          alt="<%= place.name %>"
+          class="detail-image"
+          data-caption="<%= place.imageCaption || '' %>"
+          data-credit="<%= place.imageCredit || '' %>"
+        />
+        <% if (place.imageCredit) { %>
+          <p class="detail-image-credit"><%= place.imageCredit %></p>
+        <% } %>
       <% } %>
       <p class="tag"><%= place.period %></p>
       <p class="lead"><%= place.summary %></p>
@@ -84,6 +93,9 @@
             <article class="drawing-item">
               <img src="<%= drawing.url %>" alt="<%= drawing.caption || (place.name + '手绘图') %>" />
               <p><%= drawing.caption || '手绘图' %></p>
+              <% if (drawing.credit) { %>
+                <p class="drawing-credit"><%= drawing.credit %></p>
+              <% } %>
             </article>
           <% }) %>
         </section>
@@ -319,6 +331,7 @@
     <div class="image-lightbox-content">
       <img class="image-lightbox-img" id="imageLightboxImg" src="" alt="" />
       <p class="image-lightbox-caption" id="imageLightboxCaption"></p>
+      <p class="image-lightbox-credit" id="imageLightboxCredit"></p>
     </div>
   </div>
 
@@ -328,12 +341,19 @@
       var lightbox = document.getElementById("imageLightbox");
       var lightboxImg = document.getElementById("imageLightboxImg");
       var lightboxCaption = document.getElementById("imageLightboxCaption");
+      var lightboxCredit = document.getElementById("imageLightboxCredit");
       var closeBtn = document.getElementById("imageLightboxClose");
 
-      function openLightbox(src, caption) {
+      // credit 是「届别 专业 姓名」的署名，单独一行显示；没有就隐藏这一行
+      function openLightbox(src, caption, credit) {
         lightboxImg.src = src;
         lightboxImg.alt = caption || "";
         lightboxCaption.textContent = caption || "";
+        lightboxCaption.style.display = caption ? "" : "none";
+        if (lightboxCredit) {
+          lightboxCredit.textContent = credit || "";
+          lightboxCredit.style.display = credit ? "" : "none";
+        }
         lightbox.classList.add("open");
         document.body.style.overflow = "hidden";
       }
@@ -348,28 +368,37 @@
         }, 350);
       }
 
-      // 主图点击
+      // 主图：说明与署名从 data-* 上读
       var detailImage = document.querySelector(".detail-image");
       if (detailImage) {
         detailImage.addEventListener("click", function () {
-          openLightbox(detailImage.src, detailImage.alt);
+          openLightbox(
+            detailImage.src,
+            detailImage.getAttribute("data-caption") || detailImage.alt,
+            detailImage.getAttribute("data-credit") || ""
+          );
         });
       }
 
-      // 手绘图点击
+      // 手绘图：第一行是说明，署名在 .drawing-credit 里
       var drawingItems = document.querySelectorAll(".drawing-item img");
       drawingItems.forEach(function (img) {
         img.addEventListener("click", function (e) {
           e.stopPropagation();
           var caption = "";
+          var credit = "";
           var drawingItem = img.closest(".drawing-item");
           if (drawingItem) {
             var captionEl = drawingItem.querySelector("p");
             if (captionEl) {
               caption = captionEl.textContent.trim();
             }
+            var creditEl = drawingItem.querySelector(".drawing-credit");
+            if (creditEl) {
+              credit = creditEl.textContent.trim();
+            }
           }
-          openLightbox(img.src, caption || img.alt);
+          openLightbox(img.src, caption || img.alt, credit);
         });
       });
 
