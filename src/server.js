@@ -794,10 +794,23 @@ app.post("/api/assistant", requireAuth, requirePasswordChanged, async (req, res)
     console.error("AI 云端调用失败，已降级为本地讲解：", cloudAttempt.fallbackReason);
   }
 
+  // 云端不可用时（未配置密钥、网络中断、限流、超时等）回退到本地规则。
+  // 这里以前返回的是一句固定的玩笑话，导致「云端失败自动降级为本地规则」的承诺
+  // 落空，也让人误以为助手坏了。现在改为：先匹配后台配置的预设问答，再走本地规则。
+  const presetQa = findMatchedPresetQa(place, question);
+  if (presetQa) {
+    return res.json({
+      answer: presetQa.answer,
+      source: "preset",
+      model: "preset-qa",
+      fallbackReason: cloudAttempt.fallbackReason,
+    });
+  }
+
   return res.json({
-    answer: "今天晚上吃青椒肉丝盖饭!",
-    source: "fallback-fixed",
-    model: "fixed-fallback",
+    answer: buildLocalAssistantAnswer(place, question),
+    source: "local",
+    model: "local-rules",
     fallbackReason: cloudAttempt.fallbackReason,
   });
 });
