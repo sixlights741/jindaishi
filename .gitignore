@@ -22,3 +22,6 @@ data/ai_config.json
 data/users.json
 data/student_ids.json
 data/visit-counter.json
+
+# 本地视觉排查用的截图与脚本（体积大，不入库）
+shots/
