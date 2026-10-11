@@ -2521,3 +2521,60 @@ button:hover::after,
     font-size: 12px;
   }
 }
+
+/* ===== 宽屏放大登录页的主视觉 =====
+   手机上卡片宽 92vw、占视口面积约 40%，主视觉很显著；
+   但 .auth-card 的上限写死 420px，所以视口越大占比越低：
+     390 手机  占宽 92.0%  占面积 40.1%
+     1280 笔记本 占宽 32.8%  占面积 16.6%
+     1920 大屏  占宽 21.9%  占面积  8.2%
+   缩到五分之一自然抓不住眼睛。这里只对宽屏（>=1100px）放大卡片、
+   校徽、标题与两个圆钮，并把背景照片虚化压暗，让主视觉从背景里浮出来。
+   手机与窄屏完全不受影响。 */
+@media (min-width: 1100px) {
+  .auth-body::before {
+    /* 背景整体虚化 + 压暗，主视觉因此获得干净的暗场 */
+    filter: blur(7px) saturate(1.1) brightness(0.8);
+    transform: scale(1.04);
+  }
+
+  .auth-body .auth-card {
+    width: min(620px, 92vw);
+    padding: 44px 40px;
+  }
+
+  .auth-body .auth-card h1.auth-title {
+    font-size: 40px;
+    letter-spacing: 1.5px;
+    /* 背景虚化后仍有局部高光/深色，加大文字阴影保证任何位置都清晰 */
+    text-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.95),
+      0 0 20px rgba(0, 0, 0, 0.8),
+      0 4px 16px rgba(0, 0, 0, 0.6);
+  }
+
+  .auth-body .auth-card .login-emblem {
+    width: 150px;
+    height: 150px;
+    margin-bottom: 22px;
+  }
+
+  .auth-body .auth-card .circle-btn {
+    width: 176px;
+    height: 176px;
+  }
+
+  .auth-body .auth-card .circle-icon {
+    font-size: 52px;
+  }
+
+  .auth-body .auth-card .circle-label {
+    font-size: 26px;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  }
+
+  .auth-body .auth-card .auth-choice {
+    gap: 56px;
+    margin: 40px 0 8px;
+  }
+}
