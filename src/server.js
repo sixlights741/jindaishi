@@ -68,7 +68,9 @@ function hasImageSignature(head) {
   );
 }
 
-// 收下所有已落盘的上传文件，返回第一个内容不是图片的；同时删除本次上传的全部临时文件
+// 校验本次落盘的上传文件里有没有"内容不是图片"的；返回错误信息，没问题返回 null。
+// 注意：只有在要拒绝这次提交时才删除文件——校验通过的文件必须留在 public/uploads 里，
+// 因为后面的保存逻辑会直接引用它们（曾经误删过一次，导致新上传的图全部 404）。
 function collectInvalidUpload(req) {
   const files = Object.values(req.files || {}).flat().filter(Boolean);
   let invalid = null;
@@ -79,16 +81,27 @@ function collectInvalidUpload(req) {
     if (!hasImageSignature(readFileHead(file.path, 12))) {
       invalid = invalid || file;
     }
+  });
+
+  const message = invalid
+    ? `文件「${decodeUploadedFileName(invalid.originalname)}」不是有效的图片（内容与图片格式不符），已拒绝保存`
+    : req.fileValidationError || null;
+
+  if (!message) {
+    return null;
+  }
+
+  files.forEach((file) => {
+    if (!file.path) {
+      return;
+    }
     try {
       fs.unlinkSync(file.path);
     } catch (error) {
       console.error("清理未通过校验的上传文件失败：", file.path, error.message);
     }
   });
-  if (invalid) {
-    return `文件「${decodeUploadedFileName(invalid.originalname)}」不是有效的图片（内容与图片格式不符），已拒绝保存`;
-  }
-  return req.fileValidationError || null;
+  return message;
 }
 
 const upload = multer({
