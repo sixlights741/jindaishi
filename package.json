@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "pet:assets": "node scripts/import-pet-assets.js",
     "lint": "echo \"No lint configured\""
   },
   "keywords": [

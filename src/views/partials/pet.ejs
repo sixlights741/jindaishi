@@ -1,0 +1,23 @@
+<%#
+  桌宠问答入口（局部视图）
+
+  依赖：
+    /pet/pet.css            宠物与对话面板样式（由 place.ejs 的 <head> 引入）
+    /pet/pet.js             宠物引擎（待机 / 漫游 / 拖拽 / 点击回应）
+    /pet/assistant.js       点击宠物后打开对话面板，接 /api/assistant
+
+  素材：
+    public/pet/anim/*.webm  由 `npm run pet:assets` 从 dsh-pet 导入（MIT）
+    public/pet/fallback.png 素材缺失 / Safari 不认 webm 透明通道时的静态兜底
+
+  用法：在页面 body 末尾用 EJS include 引入本文件，并传 place 与 user。
+  面板里不再有预设问题，用户直接输入提问。
+%>
+<section
+  id="neu-pet"
+  data-place-id="<%= place.id %>"
+  data-place-name="<%= place.name %>"
+  data-user-id="<%= user.studentId %>"
+></section>
+<script src="/pet/pet.js" defer></script>
+<script src="/pet/assistant.js" defer></script>

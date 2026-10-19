@@ -1,0 +1,319 @@
+/* 桌宠 + 问答面板样式
+ * 素材：dsh-pet（MIT）透明动画，640×360 画布、脚底线在 y=330。
+ * 配色跟站点一致（深色卡片 + 蓝色高亮），变量沿用 /styles.css 的 :root。
+ */
+
+/* ---------------- 宠物本体 ---------------- */
+.neu-pet {
+  position: fixed;
+  left: 0;
+  top: 0;
+  /* 站点层级：内容 < 桌宠(950) < 访问角标(999) < 地点浮层(1000) < 图片灯箱(2000)。
+     桌宠要待在灯箱下面，放大看图时别飘在图上。 */
+  z-index: 950;
+  pointer-events: none; /* 整块透明区不吃点击，只有身体命中区可交互 */
+  will-change: transform;
+}
+
+.neu-pet__float {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(var(--facing, 1)) scaleY(var(--squash, 1));
+  /* 以脚底为锚点缩放，压扁时脚不会离地 */
+  transform-origin: 50% 91.667%;
+  will-change: transform;
+}
+
+.neu-pet__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 120ms linear;
+  pointer-events: none;
+}
+
+.neu-pet__video.is-front {
+  opacity: 1;
+}
+
+/* 素材缺失 / Safari 不认 webm alpha 时的静态兜底 */
+.neu-pet__fallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: url("/pet/fallback.png") center bottom / contain no-repeat;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.45));
+}
+
+.neu-pet.is-missing .neu-pet__video {
+  display: none;
+}
+
+.neu-pet.is-missing .neu-pet__fallback {
+  display: block;
+}
+
+/* 静态模式下也让它「活着」：轻微呼吸起伏 */
+.neu-pet.is-missing .neu-pet__fallback {
+  animation: neu-pet-bob 4.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes neu-pet-bob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.006);
+  }
+}
+
+.neu-pet__hit {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  border-radius: 50%;
+  outline: none;
+}
+
+.neu-pet__hit:active {
+  cursor: grabbing;
+}
+
+.neu-pet__hit:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent, #58a6ff);
+}
+
+.neu-pet__bubble {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 26px);
+  transform: translate(-50%, 6px);
+  /* max-content：按文字自然宽度排版；上限不超过宠物舞台，避免溢出到屏幕外 */
+  width: max-content;
+  max-width: min(260px, 100%);
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(88, 166, 255, 0.35);
+  color: #1f2937;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 160ms ease, transform 160ms ease;
+  pointer-events: none;
+  white-space: pre-line;
+}
+
+/* 小尾巴：让气泡看起来是从宠物嘴里说出来的，而不是浮在旁边的一块牌子 */
+.neu-pet__bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  background: rgba(255, 255, 255, 0.97);
+  border-right: 1px solid rgba(88, 166, 255, 0.35);
+  border-bottom: 1px solid rgba(88, 166, 255, 0.35);
+  border-bottom-right-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.neu-pet__bubble.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+/* ---------------- 问答面板 ---------------- */
+.neu-pet-chat {
+  position: fixed;
+  /* 对话面板永远在最上层（含图片灯箱 2000） */
+  z-index: 2100;
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(60vh, 520px);
+  display: flex;
+  flex-direction: column;
+  color-scheme: light; /* 输入框、滚动条用浅色原生控件 */
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.97);
+  color: #1f2937;
+  border: 1px solid rgba(88, 166, 255, 0.28);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  animation: neu-pet-chat-in 160ms ease-out;
+}
+
+@keyframes neu-pet-chat-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.neu-pet-chat[hidden] {
+  display: none;
+}
+
+.neu-pet-chat__header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(135deg, rgba(88, 166, 255, 0.16), rgba(157, 78, 221, 0.08));
+}
+
+.neu-pet-chat__title {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.neu-pet-chat__clear,
+.neu-pet-chat__close {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.neu-pet-chat__close {
+  font-size: 18px;
+}
+
+.neu-pet-chat__clear:hover,
+.neu-pet-chat__close:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+}
+
+.neu-pet-chat__log {
+  flex: 1;
+  min-height: 120px;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.neu-pet-msg {
+  max-width: 86%;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.neu-pet-msg--user {
+  align-self: flex-end;
+  background: #3b6ef6;
+  color: #ffffff;
+  border-bottom-right-radius: 4px;
+}
+
+.neu-pet-msg--bot {
+  align-self: flex-start;
+  background: #f1f5f9;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
+}
+
+.neu-pet-msg--meta {
+  font-size: 11px;
+  color: #64748b;
+  padding: 0 4px;
+  align-self: flex-start;
+}
+
+.neu-pet-chat__form {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.neu-pet-chat__form input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 13px;
+  color: #1f2937;
+  background: #f8fafc;
+}
+
+.neu-pet-chat__form input::placeholder {
+  color: #94a3b8;
+}
+
+.neu-pet-chat__form input:focus {
+  outline: none;
+  border-color: rgba(88, 166, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.18);
+}
+
+.neu-pet-chat__form button {
+  border: 0;
+  border-radius: 10px;
+  padding: 0 16px;
+  background: #3b6ef6;
+  color: #ffffff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.neu-pet-chat__form button:disabled {
+  background: #94a3b8;
+  cursor: progress;
+}
+
+/* 手机：面板贴着底边，宠物缩小让位 */
+@media (max-width: 640px) {
+  .neu-pet-chat {
+    left: 12px !important;
+    right: 12px;
+    bottom: 12px !important;
+    top: auto !important;
+    width: auto;
+    max-height: 62vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neu-pet-chat {
+    animation: none;
+  }
+  .neu-pet__video {
+    transition: none;
+  }
+  .neu-pet.is-missing .neu-pet__fallback {
+    animation: none;
+  }
+}
