@@ -132,11 +132,15 @@ function main() {
     bytes += fs.statSync(to).size;
   }
 
-  // 静态兜底图：素材缺失 / Safari 不认 webm alpha 时显示
+  // 静态兜底图：素材缺失 / Safari / 微信内置浏览器时显示。
+  // 仓库里已经放了一张从待机动画里截好的透明立绘（尺寸与 640×360 对齐），
+  // 这里只在它不存在时才用 dsh-pet 的 logo 顶上，避免重新导入素材时把立绘覆盖掉。
   const logo = path.join(sourceDir, "..", "logo.png");
   const fallback = path.join(__dirname, "..", "public", "pet", "fallback.png");
-  if (fs.existsSync(logo)) {
+  if (fs.existsSync(logo) && !fs.existsSync(fallback)) {
     fs.copyFileSync(logo, fallback);
+  } else if (fs.existsSync(fallback)) {
+    console.log("已存在 public/pet/fallback.png，保留现有静态立绘（不覆盖）");
   }
 
   // 保留 MIT 版权声明

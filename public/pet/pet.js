@@ -85,13 +85,17 @@
     return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
   }
 
-  /** Safari / iOS 内核不认 webm 的 alpha 通道，放出来是黑底方块。
-   *  这里直接退成静态立绘（fallback.png），交互照常。 */
+  /** 有些内置浏览器放不出「带透明通道的 webm」：
+   *  - iOS / Safari 不认 webm alpha，会显示黑底方块；
+   *  - 微信内置浏览器（Android X5 / iOS WKWebView）还会拦截自动播放、
+   *    或把 <video> 抢去用原生播放器，结果就是「宠物完全不显示」。
+   *  这些环境统一退成静态立绘（fallback.png），点击、拖拽、问答全部照常。 */
   function prefersStaticPet() {
     var ua = (global.navigator && global.navigator.userAgent) || "";
+    var isWeChat = /MicroMessenger/i.test(ua);
     var isIos = /iPhone|iPad|iPod/.test(ua);
     var isSafari = /Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR|CriOS|FxiOS/.test(ua);
-    return isIos || isSafari;
+    return isWeChat || isIos || isSafari;
   }
 
   function createPet(options) {
@@ -149,8 +153,8 @@
       stage.style.height = stageH + "px";
       stage.innerHTML =
         '<div class="neu-pet__float">' +
-        '<video class="neu-pet__video" muted playsinline preload="none" disablepictureinpicture></video>' +
-        '<video class="neu-pet__video" muted playsinline preload="none" disablepictureinpicture></video>' +
+        '<video class="neu-pet__video" muted playsinline webkit-playsinline x5-playsinline preload="none" disablepictureinpicture></video>' +
+        '<video class="neu-pet__video" muted playsinline webkit-playsinline x5-playsinline preload="none" disablepictureinpicture></video>' +
         '<div class="neu-pet__fallback" aria-hidden="true"></div>' +
         "</div>" +
         '<div class="neu-pet__hit" role="button" tabindex="0" aria-label="讲解小助手，点击开始提问"></div>' +
@@ -724,6 +728,23 @@
         playIdle(600);
       }
       global.addEventListener("resize", handleResize);
+      // 兜底：有些内置浏览器既不报错、也放不出画面（典型是微信/厂商 WebView）。
+      // 挂载后 8 秒还没有任何一帧解码成功，就直接显示静态立绘，别让宠物凭空消失。
+      setTimeout(function () {
+        if (destroyed || staticOnly || !mounted) {
+          return;
+        }
+        var hasFrame = false;
+        for (var i = 0; i < videos.length; i += 1) {
+          if (videos[i].readyState >= 2) {
+            hasFrame = true;
+            break;
+          }
+        }
+        if (!hasFrame) {
+          stage.classList.add("is-missing");
+        }
+      }, 8000);
       // 有些环境（移动端地址栏收起、无头浏览器注入窗口尺寸）会在挂载后才真正定下视口，
       // 贴边状态下再贴一次，避免宠物停在半空或被裁掉。
       setTimeout(function () {

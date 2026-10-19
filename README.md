@@ -516,7 +516,7 @@ conda activate neu-web
 | `public/pet/pet.css` | 宠物与问答面板样式 |
 | `public/pet/assistant.js` | 点击宠物打开面板，接 `/api/assistant`，带会话内历史；面板不含预设问题 |
 | `public/pet/anim/*.webm` | 透明动画素材（默认 23 个动作，合计约 10 MB） |
-| `public/pet/fallback.png` | 素材缺失或 Safari/iOS 不认 webm 透明通道时的静态兜底 |
+| `public/pet/fallback.png` | 静态立绘：Safari/iOS、微信内置浏览器不播 webm 透明动画时顶上 |
 | `public/pet/LICENSE-dsh-pet.txt` | 素材的 MIT 许可声明 |
 
 ### 11.2 素材从哪来、怎么再导一次
@@ -540,7 +540,8 @@ node scripts/import-pet-assets.js --all             # 导入全部 105 个动作
 - 默认站位在右下角「累计访问」角标上方（`assistant.js` 里的 `insets`），不会踩住角标
 - 面板打开时宠物停止漫游；回答过程中播放「思考冒泡」，成功/失败分别切庆祝/叹气动作
 - 面板里没有预设问题，直接输入提问；后台为该地点配的预设问答仍会在命中时直接作答
-- Safari / iOS 自动退成静态立绘，交互不受影响
+- Safari / iOS、微信内置浏览器（Android X5 / iOS WKWebView）自动退成静态立绘，点击、拖拽、问答不受影响
+- 其他内核如果 8 秒内一帧都没解码出来（既不报错也不显示），也会自动切静态立绘
 
 ### 11.4 想关掉桌宠
 
